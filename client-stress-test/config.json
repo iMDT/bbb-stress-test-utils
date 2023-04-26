@@ -1,0 +1,17 @@
+{
+  "app_name": "BBB Client Stress test",
+  "securitySalt": "miQwUjxMww5ozVgHZBNF4cxQVQOwQ2IBAAQkSqxeko",
+  "numOfusers": 30,
+  "intervalBetweenMessagesInMs": 250,
+  "minIntervalBetweenUserJoinInMs": 0,
+  "maxIntervalBetweenUserJoinInMs": 250,
+  "listOfMessages": [
+    "Just arriveeed!",
+    "How are you?",
+    "I love BigBlueButton",
+    "What a beautiful day",
+    "Once upon a time, in a quaint village nestled between two towering mountains, a group of dedicated individuals worked tirelessly to bring harmony and prosperity to their community. They had created a society that valued respect, honesty, and camaraderie above all else. The villagers had developed a strong bond, and their days were filled with laughter, lively discussions, and the joy of shared experiences.",
+    "Have a good one"
+  ],
+  "debug": true
+}
