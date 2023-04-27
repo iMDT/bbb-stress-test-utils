@@ -1,6 +1,7 @@
 {
   "app_name": "BBB Client Stress test",
   "securitySalt": "miQwUjxMww5ozVgHZBNF4cxQVQOwQ2IBAAQkSqxeko",
+  "bbbUrl": "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api",
   "numOfusers": 30,
   "intervalBetweenMessagesInMs": 250,
   "minIntervalBetweenUserJoinInMs": 0,

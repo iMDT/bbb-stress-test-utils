@@ -16,6 +16,7 @@ import (
 type Config struct {
 	AppName                        string   `json:"app_name"`
 	SecuritySalt                   string   `json:"securitySalt"`
+	BbbUrl                         string   `json:"bbbUrl"`
 	NumOfUsers                     int      `json:"numOfusers"`
 	IntervalBetweenMessagesInMs    int      `json:"intervalBetweenMessagesInMs"`
 	MinIntervalBetweenUserJoinInMs int      `json:"minIntervalBetweenUserJoinInMs"`
@@ -41,7 +42,9 @@ func getConfig() Config {
 }
 
 func getApiUrl() string {
-	return "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api"
+	//return "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api"
+	config := getConfig()
+	return config.BbbUrl
 }
 
 func getSalt() string {
