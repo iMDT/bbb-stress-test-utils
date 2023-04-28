@@ -19,6 +19,7 @@ type Config struct {
 	BbbUrl                         string   `json:"bbbUrl"`
 	NumOfUsers                     int      `json:"numOfusers"`
 	IntervalBetweenMessagesInMs    int      `json:"intervalBetweenMessagesInMs"`
+	DelayFirstUserJoinInSecs       int      `json:"delayFirstUserJoinInSecs"`
 	MinIntervalBetweenUserJoinInMs int      `json:"minIntervalBetweenUserJoinInMs"`
 	MaxIntervalBetweenUserJoinInMs int      `json:"maxIntervalBetweenUserJoinInMs"`
 	ListOfMessages                 []string `json:"listOfMessages"`
@@ -141,7 +142,7 @@ func main() {
 
 	fmt.Println(fmt.Sprintf("It will add %d users to the meeting.", config.NumOfUsers))
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(time.Duration(config.DelayFirstUserJoinInSecs) * time.Second)
 
 	for i := 0; i < config.NumOfUsers; i++ {
 		name := fmt.Sprintf("Student %0*d", 5, i)

@@ -4,6 +4,7 @@
   "bbbUrl": "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api",
   "numOfusers": 30,
   "intervalBetweenMessagesInMs": 250,
+  "delayFirstUserJoinInSecs": 5,
   "minIntervalBetweenUserJoinInMs": 0,
   "maxIntervalBetweenUserJoinInMs": 250,
   "listOfMessages": [
