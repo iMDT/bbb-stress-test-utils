@@ -62,15 +62,21 @@ type JoinResponse struct {
 	Url          string   `xml:"url"`
 }
 
-func generateJoinUrl(meetingId string, name string, redirect string) string {
+func generateJoinUrl(meetingId string, name string, redirect string, moderator bool) string {
 	controller := "join"
 	name = strings.Replace(name, " ", "+", -1)
-	params := "fullName=" + name + "&meetingID=" + meetingId + "&password=mp&redirect=" + redirect
+	params := ""
+	if moderator == true {
+		params = "fullName=" + name + "&meetingID=" + meetingId + "&password=mp&redirect=" + redirect
+	} else {
+		params = "fullName=" + name + "&meetingID=" + meetingId + "&password=ap&redirect=" + redirect
+	}
+
 	return getApiUrl() + "/" + controller + "?" + params + "&checksum=" + getSha1sum(controller+params+getSalt())
 }
 
 func requestApiJoin(client *http.Client, meetingId string, name string) (string, string, string) {
-	respJoin, err := client.Get(generateJoinUrl(meetingId, name, "false"))
+	respJoin, err := client.Get(generateJoinUrl(meetingId, name, "false", false))
 	if err != nil {
 		log.Fatal(err)
 	}

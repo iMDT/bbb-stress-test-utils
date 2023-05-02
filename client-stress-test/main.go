@@ -138,7 +138,7 @@ func main() {
 
 	println("Meeting id: ", meetingId)
 
-	println("Use this link to join the meeting in your browser: " + generateJoinUrl(meetingId, "Teacher", "true"))
+	println("Use this link to join the meeting in your browser: " + generateJoinUrl(meetingId, "Teacher", "true", true))
 
 	fmt.Println(fmt.Sprintf("It will add %d users to the meeting.", config.NumOfUsers))
 
