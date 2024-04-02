@@ -1,12 +1,18 @@
 {
   "app_name": "BBB Client Stress test",
-  "securitySalt": "miQwUjxMww5ozVgHZBNF4cxQVQOwQ2IBAAQkSqxeko",
-  "bbbUrl": "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api",
-  "numOfusers": 30,
-  "intervalBetweenMessagesInMs": 250,
+  "logLevel": "INFO",
+  "securitySalt": "8QWw8qB8Gn360ZtcTbRsHWobo9lovA0mmfGR0fGM0g",
+  "bbbUrl": "https://bbb30.bbb.imdt.dev/bigbluebutton/api",
+  "bbbDockerContainerName": "bbb30",
+  "hasuraWs": "wss://bbb30.bbb.imdt.dev/v1/graphql",
+  "numOfUsers": 100,
+  "minIntervalBetweenUserJoinInMs": 50,
+  "maxIntervalBetweenUserJoinInMs": 50,
   "delayFirstUserJoinInSecs": 5,
-  "minIntervalBetweenUserJoinInMs": 0,
-  "maxIntervalBetweenUserJoinInMs": 250,
+  "sendSubscriptionsBatch": true,
+  "sendChatMessages": false,
+  "intervalBetweenMessagesInMs": 250,
+  "intervalBetweenBenchmarkUsersInSec": 10,
   "listOfMessages": [
     "Just arriveeed!",
     "How are you?",
@@ -15,5 +21,8 @@
     "Once upon a time, in a quaint village nestled between two towering mountains, a group of dedicated individuals worked tirelessly to bring harmony and prosperity to their community. They had created a society that valued respect, honesty, and camaraderie above all else. The villagers had developed a strong bond, and their days were filled with laughter, lively discussions, and the joy of shared experiences.",
     "Have a good one"
   ],
+  "userTimeToLive": 999,
+  "method": "graphql",
+  "timeout": 300,
   "debug": true
 }
