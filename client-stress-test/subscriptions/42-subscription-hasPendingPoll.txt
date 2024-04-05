@@ -1,1 +1,26 @@
-{"id":"42","payload":{"extensions":{},"operationName":"hasPendingPoll","query":"subscription hasPendingPoll($userId: String!) {\n  meeting {\n    polls(\n      where: {ended: {_eq: false}, users: {responded: {_eq: false}, userId: {_eq: $userId}}, userCurrent: {responded: {_eq: false}}}\n    ) {\n      users {\n        responded\n        userId\n        __typename\n      }\n      options {\n        optionDesc\n        optionId\n        pollId\n        __typename\n      }\n      multipleResponses\n      pollId\n      questionText\n      secret\n      type\n      __typename\n    }\n    __typename\n  }\n}","variables":{"userId":"w_9urlbinx1ihf"}},"type":"start"}
+{"id":"42","payload":{"extensions":{},"operationName":"hasPendingPoll","query":"subscription hasPendingPoll($userId: String!) {
+  meeting {
+    polls(
+      where: {ended: {_eq: false}, users: {responded: {_eq: false}, userId: {_eq: $userId}}, userCurrent: {responded: {_eq: false}}}
+    ) {
+      users {
+        responded
+        userId
+        __typename
+      }
+      options {
+        optionDesc
+        optionId
+        pollId
+        __typename
+      }
+      multipleResponses
+      pollId
+      questionText
+      secret
+      type
+      __typename
+    }
+    __typename
+  }
+}","variables":{"userId":"w_9urlbinx1ihf"}},"type":"start"}

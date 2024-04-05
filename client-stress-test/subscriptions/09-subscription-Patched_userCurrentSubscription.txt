@@ -1,1 +1,81 @@
-{"id":"9","payload":{"extensions":{},"operationName":"Patched_userCurrentSubscription","query":"subscription Patched_userCurrentSubscription {\n  user_current {\n    authToken\n    authed\n    avatar\n    away\n    banned\n    clientType\n    color\n    disconnected\n    echoTestRunningAt\n    ejectReason\n    ejectReasonCode\n    ejected\n    emoji\n    enforceLayout\n    expired\n    extId\n    guest\n    guestStatus\n    hasDrawPermissionOnCurrentPage\n    inactivityWarningDisplay\n    inactivityWarningTimeoutSecs\n    isDialIn\n    isModerator\n    isOnline\n    isRunningEchoTest\n    joinErrorCode\n    joinErrorMessage\n    joined\n    locked\n    loggedOut\n    mobile\n    name\n    nameSortable\n    pinned\n    presenter\n    raiseHand\n    registeredAt\n    registeredOn\n    role\n    speechLocale\n    userId\n    customParameters {\n      parameter\n      value\n      __typename\n    }\n    lastBreakoutRoom {\n      breakoutRoomId\n      currentlyInRoom\n      isDefaultName\n      sequence\n      shortName\n      __typename\n    }\n    cameras {\n      streamId\n      __typename\n    }\n    userClientSettings {\n      userClientSettingsJson\n      __typename\n    }\n    voice {\n      joined\n      muted\n      spoke\n      listenOnly\n      __typename\n    }\n    presPagesWritable {\n      isCurrentPage\n      changedModeOn\n      pageId\n      presentationId\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"9","payload":{"extensions":{},"operationName":"Patched_userCurrentSubscription","query":"subscription Patched_userCurrentSubscription {
+  user_current {
+    authToken
+    authed
+    avatar
+    away
+    banned
+    clientType
+    color
+    disconnected
+    echoTestRunningAt
+    ejectReason
+    ejectReasonCode
+    ejected
+    emoji
+    enforceLayout
+    expired
+    extId
+    guest
+    guestStatus
+    hasDrawPermissionOnCurrentPage
+    inactivityWarningDisplay
+    inactivityWarningTimeoutSecs
+    isDialIn
+    isModerator
+    isOnline
+    isRunningEchoTest
+    joinErrorCode
+    joinErrorMessage
+    joined
+    locked
+    loggedOut
+    mobile
+    name
+    nameSortable
+    pinned
+    presenter
+    raiseHand
+    registeredAt
+    registeredOn
+    role
+    speechLocale
+    userId
+    customParameters {
+      parameter
+      value
+      __typename
+    }
+    lastBreakoutRoom {
+      breakoutRoomId
+      currentlyInRoom
+      isDefaultName
+      sequence
+      shortName
+      __typename
+    }
+    cameras {
+      streamId
+      __typename
+    }
+    userClientSettings {
+      userClientSettingsJson
+      __typename
+    }
+    voice {
+      joined
+      muted
+      spoke
+      listenOnly
+      __typename
+    }
+    presPagesWritable {
+      isCurrentPage
+      changedModeOn
+      pageId
+      presentationId
+      __typename
+    }
+    __typename
+  }
+}","variables":{}},"type":"start"}

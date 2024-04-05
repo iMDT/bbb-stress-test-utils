@@ -1,1 +1,12 @@
-{"id":"22","payload":{"extensions":{},"operationName":"padSession","query":"subscription padSession {\n  sharedNotes_session {\n    sessionId\n    sharedNotesExtId\n    padId\n    sharedNotes {\n      padId\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"22","payload":{"extensions":{},"operationName":"padSession","query":"subscription padSession {
+  sharedNotes_session {
+    sessionId
+    sharedNotesExtId
+    padId
+    sharedNotes {
+      padId
+      __typename
+    }
+    __typename
+  }
+}","variables":{}},"type":"start"}

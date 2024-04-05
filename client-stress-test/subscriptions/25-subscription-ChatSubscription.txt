@@ -1,1 +1,23 @@
-{"id":"25","payload":{"extensions":{},"operationName":"ChatSubscription","query":"subscription ChatSubscription {\n  chat(\n    order_by: [{public: desc}, {totalUnread: desc}, {participant: {name: asc, userId: asc}}]\n  ) {\n    chatId\n    participant {\n      userId\n      name\n      role\n      color\n      loggedOut\n      avatar\n      isOnline\n      isModerator\n      __typename\n    }\n    totalMessages\n    totalUnread\n    public\n    lastSeenAt\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"25","payload":{"extensions":{},"operationName":"ChatSubscription","query":"subscription ChatSubscription {
+  chat(
+    order_by: [{public: desc}, {totalUnread: desc}, {participant: {name: asc, userId: asc}}]
+  ) {
+    chatId
+    participant {
+      userId
+      name
+      role
+      color
+      loggedOut
+      avatar
+      isOnline
+      isModerator
+      __typename
+    }
+    totalMessages
+    totalUnread
+    public
+    lastSeenAt
+    __typename
+  }
+}","variables":{}},"type":"start"}

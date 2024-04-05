@@ -1,1 +1,13 @@
-{"id":"33","payload":{"extensions":{},"operationName":"Timer","query":"subscription Timer {\n  timer {\n    accumulated\n    active\n    songTrack\n    time\n    stopwatch\n    running\n    startedOn\n    endedOn\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"33","payload":{"extensions":{},"operationName":"Timer","query":"subscription Timer {
+  timer {
+    accumulated
+    active
+    songTrack
+    time
+    stopwatch
+    running
+    startedOn
+    endedOn
+    __typename
+  }
+}","variables":{}},"type":"start"}

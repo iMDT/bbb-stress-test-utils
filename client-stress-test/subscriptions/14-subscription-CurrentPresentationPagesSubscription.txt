@@ -1,1 +1,24 @@
-{"id":"14","payload":{"extensions":{},"operationName":"CurrentPresentationPagesSubscription","query":"subscription CurrentPresentationPagesSubscription {\n  pres_page_curr {\n    height\n    isCurrentPage\n    num\n    pageId\n    scaledHeight\n    scaledViewBoxHeight\n    scaledViewBoxWidth\n    scaledWidth\n    svgUrl: urlsJson(path: \"$.svg\")\n    width\n    xOffset\n    yOffset\n    presentationId\n    content\n    downloadFileUri\n    totalPages\n    downloadable\n    presentationName\n    isDefaultPresentation\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"14","payload":{"extensions":{},"operationName":"CurrentPresentationPagesSubscription","query":"subscription CurrentPresentationPagesSubscription {
+  pres_page_curr {
+    height
+    isCurrentPage
+    num
+    pageId
+    scaledHeight
+    scaledViewBoxHeight
+    scaledViewBoxWidth
+    scaledWidth
+    svgUrl: urlsJson(path: \"$.svg\")
+    width
+    xOffset
+    yOffset
+    presentationId
+    content
+    downloadFileUri
+    totalPages
+    downloadable
+    presentationName
+    isDefaultPresentation
+    __typename
+  }
+}","variables":{}},"type":"start"}

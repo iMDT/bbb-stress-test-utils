@@ -1,1 +1,13 @@
-{"id":"17","payload":{"extensions":{},"operationName":"getCursorCoordinatesStream","query":"subscription getCursorCoordinatesStream {\n  pres_page_cursor_stream(\n    cursor: {initial_value: {lastUpdatedAt: \"2020-01-01\"}}\n    batch_size: 100\n  ) {\n    lastUpdatedAt\n    xPercent\n    yPercent\n    lastUpdatedAt\n    userId\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"17","payload":{"extensions":{},"operationName":"getCursorCoordinatesStream","query":"subscription getCursorCoordinatesStream {
+  pres_page_cursor_stream(
+    cursor: {initial_value: {lastUpdatedAt: \"2020-01-01\"}}
+    batch_size: 100
+  ) {
+    lastUpdatedAt
+    xPercent
+    yPercent
+    lastUpdatedAt
+    userId
+    __typename
+  }
+}","variables":{}},"type":"start"}

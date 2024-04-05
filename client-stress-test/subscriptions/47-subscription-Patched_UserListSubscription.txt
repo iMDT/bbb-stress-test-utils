@@ -1,1 +1,59 @@
-{"id":"47","payload":{"extensions":{},"operationName":"Patched_UserListSubscription","query":"subscription Patched_UserListSubscription($offset: Int!, $limit: Int!) {\n  user(\n    limit: $limit\n    offset: $offset\n    order_by: [{role: asc}, {raiseHandTime: asc_nulls_last}, {awayTime: asc_nulls_last}, {emojiTime: asc_nulls_last}, {isDialIn: desc}, {hasDrawPermissionOnCurrentPage: desc}, {nameSortable: asc}, {userId: asc}]\n  ) {\n    isDialIn\n    userId\n    extId\n    name\n    isModerator\n    role\n    color\n    avatar\n    away\n    raiseHand\n    emoji\n    avatar\n    presenter\n    pinned\n    locked\n    authed\n    mobile\n    guest\n    clientType\n    disconnected\n    loggedOut\n    voice {\n      joined\n      listenOnly\n      talking\n      muted\n      voiceUserId\n      __typename\n    }\n    cameras {\n      streamId\n      __typename\n    }\n    presPagesWritable {\n      isCurrentPage\n      pageId\n      userId\n      __typename\n    }\n    lastBreakoutRoom {\n      isDefaultName\n      sequence\n      shortName\n      currentlyInRoom\n      __typename\n    }\n    reaction {\n      reactionEmoji\n      __typename\n    }\n    __typename\n  }\n}","variables":{"limit":50,"offset":0}},"type":"start"}
+{"id":"47","payload":{"extensions":{},"operationName":"Patched_UserListSubscription","query":"subscription Patched_UserListSubscription($offset: Int!, $limit: Int!) {
+  user(
+    limit: $limit
+    offset: $offset
+    order_by: [{role: asc}, {raiseHandTime: asc_nulls_last}, {awayTime: asc_nulls_last}, {emojiTime: asc_nulls_last}, {isDialIn: desc}, {hasDrawPermissionOnCurrentPage: desc}, {nameSortable: asc}, {userId: asc}]
+  ) {
+    isDialIn
+    userId
+    extId
+    name
+    isModerator
+    role
+    color
+    avatar
+    away
+    raiseHand
+    emoji
+    avatar
+    presenter
+    pinned
+    locked
+    authed
+    mobile
+    guest
+    clientType
+    disconnected
+    loggedOut
+    voice {
+      joined
+      listenOnly
+      talking
+      muted
+      voiceUserId
+      __typename
+    }
+    cameras {
+      streamId
+      __typename
+    }
+    presPagesWritable {
+      isCurrentPage
+      pageId
+      userId
+      __typename
+    }
+    lastBreakoutRoom {
+      isDefaultName
+      sequence
+      shortName
+      currentlyInRoom
+      __typename
+    }
+    reaction {
+      reactionEmoji
+      __typename
+    }
+    __typename
+  }
+}","variables":{"limit":50,"offset":0}},"type":"start"}

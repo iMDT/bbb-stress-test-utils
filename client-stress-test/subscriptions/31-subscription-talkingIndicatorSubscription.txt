@@ -1,1 +1,22 @@
-{"id":"31","payload":{"extensions":{},"operationName":"talkingIndicatorSubscription","query":"subscription talkingIndicatorSubscription($limit: Int!) {\n  user_voice(\n    where: {showTalkingIndicator: {_eq: true}}\n    order_by: [{startTime: asc_nulls_last}]\n    limit: $limit\n  ) {\n    callerName\n    spoke\n    talking\n    floor\n    startTime\n    muted\n    userId\n    user {\n      color\n      name\n      speechLocale\n      __typename\n    }\n    __typename\n  }\n}","variables":{"limit":8}},"type":"start"}
+{"id":"31","payload":{"extensions":{},"operationName":"talkingIndicatorSubscription","query":"subscription talkingIndicatorSubscription($limit: Int!) {
+  user_voice(
+    where: {showTalkingIndicator: {_eq: true}}
+    order_by: [{startTime: asc_nulls_last}]
+    limit: $limit
+  ) {
+    callerName
+    spoke
+    talking
+    floor
+    startTime
+    muted
+    userId
+    user {
+      color
+      name
+      speechLocale
+      __typename
+    }
+    __typename
+  }
+}","variables":{"limit":8}},"type":"start"}

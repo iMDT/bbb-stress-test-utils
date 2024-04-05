@@ -1,1 +1,17 @@
-{"id":"1","payload":{"extensions":{},"operationName":"getUserCurrent","query":"subscription getUserCurrent {\n  user_current {\n    userId\n    authToken\n    joinErrorCode\n    joinErrorMessage\n    joined\n    ejectReasonCode\n    meeting {\n      ended\n      endedReasonCode\n      endedByUserName\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"1","payload":{"extensions":{},"operationName":"getUserCurrent","query":"subscription getUserCurrent {
+  user_current {
+    userId
+    authToken
+    joinErrorCode
+    joinErrorMessage
+    joined
+    ejectReasonCode
+    meeting {
+      ended
+      endedReasonCode
+      endedByUserName
+      __typename
+    }
+    __typename
+  }
+}","variables":{}},"type":"start"}

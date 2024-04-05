@@ -1,1 +1,9 @@
-{"id":"29","payload":{"extensions":{},"operationName":"getMeetingRecordingData","query":"subscription getMeetingRecordingData {\n  meeting_recording {\n    isRecording\n    startedAt\n    startedBy\n    previousRecordedTimeInSeconds\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"29","payload":{"extensions":{},"operationName":"getMeetingRecordingData","query":"subscription getMeetingRecordingData {
+  meeting_recording {
+    isRecording
+    startedAt
+    startedBy
+    previousRecordedTimeInSeconds
+    __typename
+  }
+}","variables":{}},"type":"start"}

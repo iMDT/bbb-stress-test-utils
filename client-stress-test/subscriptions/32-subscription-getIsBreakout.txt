@@ -1,1 +1,7 @@
-{"id":"32","payload":{"extensions":{},"operationName":"getIsBreakout","query":"subscription getIsBreakout {\n  meeting {\n    meetingId\n    isBreakout\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"32","payload":{"extensions":{},"operationName":"getIsBreakout","query":"subscription getIsBreakout {
+  meeting {
+    meetingId
+    isBreakout
+    __typename
+  }
+}","variables":{}},"type":"start"}

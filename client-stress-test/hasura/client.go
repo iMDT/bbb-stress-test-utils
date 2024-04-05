@@ -2,14 +2,13 @@ package hasura
 
 import (
 	"bbb-stress-test/common"
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io/fs"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -538,6 +537,12 @@ func SendSubscriptionsBatch(user *common.User) {
 
 	dir := "./subscriptions"
 
+	pattern := `"id":"\d+"`
+	re, errPattern := regexp.Compile(pattern)
+	if errPattern != nil {
+		fmt.Println("Error compiling regex:", errPattern)
+	}
+
 	// Walk the directory
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -545,42 +550,13 @@ func SendSubscriptionsBatch(user *common.User) {
 			return err
 		}
 
-		// Check if the file has a .txt extension
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
-			//fmt.Println("Reading file:", path)
-
-			// Open the .txt file
-			file, err := os.Open(path)
-			if err != nil {
-				fmt.Println("Error opening file:", err)
-				return err
-			}
-			defer file.Close()
-
-			// Read and print the file's contents
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				textFromFile := scanner.Text()
-
-				pattern := `"id":"\d+"`
-
-				re, err := regexp.Compile(pattern)
-				if err != nil {
-					fmt.Println("Error compiling regex:", err)
-				}
-
+			if fileContent, lastContentErr := ioutil.ReadFile(path); lastContentErr == nil && string(fileContent) != "" {
 				replacement := fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user))
-				textFromFileWithNewId := re.ReplaceAllString(textFromFile, replacement)
+				textFromFileWithNewId := re.ReplaceAllString(string(fileContent), replacement)
 
 				subscriptions = append(subscriptions, textFromFileWithNewId)
 			}
-
-			if err := scanner.Err(); err != nil {
-				fmt.Println("Error reading file:", err)
-				return err
-			}
-
-			//fmt.Println("-----") // Separator for file content
 		}
 
 		return nil

@@ -1,1 +1,15 @@
-{"id":"16","payload":{"extensions":{},"operationName":"CursorSubscription","query":"subscription CursorSubscription {\n  pres_page_cursor {\n    userId\n    isCurrentPage\n    pageId\n    presentationId\n    user {\n      name\n      presenter\n      role\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"16","payload":{"extensions":{},"operationName":"CursorSubscription","query":"subscription CursorSubscription {
+  pres_page_cursor {
+    userId
+    isCurrentPage
+    pageId
+    presentationId
+    user {
+      name
+      presenter
+      role
+      __typename
+    }
+    __typename
+  }
+}","variables":{}},"type":"start"}

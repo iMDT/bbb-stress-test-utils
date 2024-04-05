@@ -1,1 +1,33 @@
-{"id":"4","payload":{"extensions":{},"operationName":"voiceUserStream","query":"subscription voiceUserStream {\n  user_voice_mongodb_adapter_stream(\n    cursor: {initial_value: {voiceUpdatedAt: \"2020-01-01\"}}\n    batch_size: 100\n  ) {\n    voiceUpdatedAt\n    callerName\n    callerNum\n    callingWith\n    endTime\n    endedAt\n    floor\n    hideTalkingIndicatorAt\n    joined\n    lastFloorTime\n    lastSpeakChangedAt\n    listenOnly\n    muted\n    showTalkingIndicator\n    spoke\n    startTime\n    startedAt\n    talking\n    userId\n    voiceConf\n    voiceConfCallSession\n    voiceConfCallState\n    voiceConfClientSession\n    voiceUpdatedAt\n    voiceUserId\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"4","payload":{"extensions":{},"operationName":"voiceUserStream","query":"subscription voiceUserStream {
+  user_voice_mongodb_adapter_stream(
+    cursor: {initial_value: {voiceUpdatedAt: \"2020-01-01\"}}
+    batch_size: 100
+  ) {
+    voiceUpdatedAt
+    callerName
+    callerNum
+    callingWith
+    endTime
+    endedAt
+    floor
+    hideTalkingIndicatorAt
+    joined
+    lastFloorTime
+    lastSpeakChangedAt
+    listenOnly
+    muted
+    showTalkingIndicator
+    spoke
+    startTime
+    startedAt
+    talking
+    userId
+    voiceConf
+    voiceConfCallSession
+    voiceConfCallState
+    voiceConfClientSession
+    voiceUpdatedAt
+    voiceUserId
+    __typename
+  }
+}","variables":{}},"type":"start"}

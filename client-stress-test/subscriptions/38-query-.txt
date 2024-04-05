@@ -1,1 +1,7 @@
-{"id":"38","payload":{"extensions":{},"query":"{\n  user_welcomeMsgs {\n    welcomeMsg\n    welcomeMsgForModerators\n    __typename\n  }\n}","variables":{}},"type":"start"}
+{"id":"38","payload":{"extensions":{},"query":"{
+  user_welcomeMsgs {
+    welcomeMsg
+    welcomeMsgForModerators
+    __typename
+  }
+}","variables":{}},"type":"start"}
