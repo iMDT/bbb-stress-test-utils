@@ -84,7 +84,9 @@ func main() {
 	startedAt := time.Now()
 
 	//Start benchmarking client
-	go benchmarking(meetingId)
+	if config.BenchmarkingEnabled {
+		go benchmarking(meetingId)
+	}
 
 	for i := 0; i < config.NumOfUsers; i++ {
 		name := fmt.Sprintf("Student %0*d", 5, i)
@@ -106,10 +108,14 @@ func main() {
 			exit = true
 
 			log.Infof("It took: %v seconds.\n", time.Since(startedAt).Seconds())
+
+			time.Sleep(time.Duration(config.DelayToFinishTestSecs) * time.Second)
 		}
 
 		//Wait a benchmark user
-		time.Sleep(time.Duration(4) * time.Second)
+		if config.BenchmarkingEnabled {
+			time.Sleep(time.Duration(4) * time.Second)
+		}
 
 		if time.Since(timeRunning).Seconds() > float64(config.Timeout) {
 			log.Infoln("Exiting due to timeout.")
@@ -119,8 +125,10 @@ func main() {
 
 	formattedDate := time.Now().Format("2006-01-02 15:04:05")
 
-	common.ExportCsv(formattedDate)
-	common.DrawPlot(formattedDate)
+	if config.BenchmarkingEnabled {
+		common.ExportCsv(formattedDate)
+		common.DrawPlot(formattedDate)
+	}
 }
 
 func benchmarking(meetingId string) {

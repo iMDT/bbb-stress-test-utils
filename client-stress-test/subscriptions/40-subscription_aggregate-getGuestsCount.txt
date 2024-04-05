@@ -1,0 +1,1 @@
+{"id":"40","payload":{"extensions":{},"operationName":"getGuestsCount","query":"subscription getGuestsCount {\n  user_guest_aggregate(where: {isWaiting: {_eq: true}}) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"start"}

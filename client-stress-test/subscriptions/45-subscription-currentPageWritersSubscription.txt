@@ -1,0 +1,1 @@
+{"id":"45","payload":{"extensions":{},"operationName":"currentPageWritersSubscription","query":"subscription currentPageWritersSubscription($pageId: String!) {\n  pres_page_writers(where: {pageId: {_eq: $pageId}}) {\n    userId\n    __typename\n  }\n}","variables":{"pageId":"bc325f802b4bfb7b3777d841339eb9f4913f96a1-1712315087350/1"}},"type":"start"}

@@ -1,0 +1,1 @@
+{"id":"10","payload":{"extensions":{},"operationName":"isSharedNotesPinned","query":"subscription isSharedNotesPinned {\n  sharedNotes(where: {pinned: {_eq: true}}) {\n    pinned\n    sharedNotesExtId\n    model\n    __typename\n  }\n}","variables":{}},"type":"start"}

@@ -1,0 +1,1 @@
+{"id":"28","payload":{"extensions":{},"operationName":"getMeetingRecordingPolicies","query":"subscription getMeetingRecordingPolicies {\n  meeting_recordingPolicies {\n    allowStartStopRecording\n    autoStartRecording\n    record\n    __typename\n  }\n}","variables":{}},"type":"start"}

@@ -1,7 +1,7 @@
 {
   "app_name": "BBB Client Stress test",
   "logLevel": "INFO",
-  "securitySalt": "8QWw8qB8Gn360ZtcTbRsHWobo9lovA0mmfGR0fGM0g",
+  "securitySalt": "naZXxc9ifdabNIGaTfyGjp2ek2xOj7iLmoHVoSzOng",
   "bbbUrl": "https://bbb30.bbb.imdt.dev/bigbluebutton/api",
   "bbbDockerContainerName": "bbb30",
   "hasuraWs": "wss://bbb30.bbb.imdt.dev/v1/graphql",
@@ -9,6 +9,7 @@
   "minIntervalBetweenUserJoinInMs": 50,
   "maxIntervalBetweenUserJoinInMs": 50,
   "delayFirstUserJoinInSecs": 5,
+  "delayToFinishTestSecs": 0,
   "sendSubscriptionsBatch": true,
   "sendChatMessages": false,
   "intervalBetweenMessagesInMs": 250,
@@ -24,5 +25,6 @@
   "userTimeToLive": 999,
   "method": "graphql",
   "timeout": 300,
+  "benchmarkingEnabled": false,
   "debug": true
 }

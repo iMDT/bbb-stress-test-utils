@@ -16,6 +16,7 @@ type Config struct {
 	IntervalBetweenBenchmarkUsersInSec int      `json:"intervalBetweenBenchmarkUsersInSec"`
 	IntervalBetweenMessagesInMs        int      `json:"intervalBetweenMessagesInMs"`
 	DelayFirstUserJoinInSecs           int      `json:"delayFirstUserJoinInSecs"`
+	DelayToFinishTestSecs              int      `json:"delayToFinishTestSecs"`
 	MinIntervalBetweenUserJoinInMs     int      `json:"minIntervalBetweenUserJoinInMs"`
 	MaxIntervalBetweenUserJoinInMs     int      `json:"maxIntervalBetweenUserJoinInMs"`
 	ListOfMessages                     []string `json:"listOfMessages"`
@@ -24,6 +25,7 @@ type Config struct {
 	UserTimeToLive                     int      `json:"userTimeToLive"`
 	Method                             string   `json:"method"`
 	Timeout                            int      `json:"timeout"`
+	BenchmarkingEnabled                bool     `json:"benchmarkingEnabled"`
 	Debug                              bool     `json:"debug"`
 }
 

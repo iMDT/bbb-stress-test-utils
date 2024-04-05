@@ -1,0 +1,1 @@
+{"id":"5","payload":{"extensions":{},"operationName":"getClientSettings","query":"query getClientSettings {\n  meeting {\n    clientSettings {\n      clientSettingsJson\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"start"}

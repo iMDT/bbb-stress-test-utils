@@ -2,12 +2,18 @@ package hasura
 
 import (
 	"bbb-stress-test/common"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"io/fs"
 	"math/rand"
 	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -89,6 +95,13 @@ func StartUser(user *common.User) {
 		}
 	}()
 
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			SendUpdateConnectionAliveAt(user, GetCurrMessageId(user))
+		}
+	}()
+
 	go handleWsMessages(user)
 	SendConnectionInitMessage(user)
 
@@ -114,6 +127,7 @@ func handleWsMessages(user *common.User) {
 		_, message, err := user.WsConnection.ReadMessage()
 		if err != nil {
 			user.Logger.Debugln("read:", err)
+			user.Logger.Debugf("%v", message)
 			return
 		}
 
@@ -132,8 +146,11 @@ func handleWsMessages(user *common.User) {
 		err = json.Unmarshal(message, &msg)
 		if err != nil {
 			user.Logger.Println("error on unmarshal message:", err)
+			user.Logger.Debugf("%v", msg)
 			continue
 		}
+
+		user.Logger.Debugf("Received: %s %v", msg.Id, msg)
 
 		switch msg.Type {
 		case "connection_ack":
@@ -220,13 +237,21 @@ func handleWsMessages(user *common.User) {
 												}
 
 												if user.Benchmarking {
-													SendUpdateConnectionAliveAt(user)
+													SendUpdateConnectionAliveAtBenchmarking(user)
 												}
 
-												time.Sleep(1 * time.Second)
+												//Wait for re-connection
+												time.Sleep(2 * time.Second)
+
+												//for i := 0; i < 25; i++ {
+												//	time.Sleep(1000 * time.Millisecond)
+												//	SendSubscriptionsBatch(user)
+												//}
+
+												SendSubscriptionsBatch(user)
 
 												if !user.Benchmarking {
-													SendSubscriptionsBatch(user)
+													//SendSubscriptionsBatch(user)
 													SendChatMessages(user)
 												}
 											}
@@ -439,22 +464,32 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 												}`)
 }
 
-func SendUpdateConnectionAliveAt(user *common.User) {
+func SendUpdateConnectionAliveAtBenchmarking(user *common.User) {
 	user.ConnectionAliveMutationId = GetCurrMessageId(user)
 
 	user.Logger.Debugf("Created alive at %d", user.ConnectionAliveMutationId)
 
+	SendUpdateConnectionAliveAt(user, user.ConnectionAliveMutationId)
+}
+
+func SendUpdateConnectionAliveAt(user *common.User, messageId int) {
 	//Send Message
 	SendGenericGraphqlMessage(
 		user,
-		user.ConnectionAliveMutationId,
-		map[string]interface{}{},
+		messageId,
+		map[string]interface{}{
+			"networkRttInMs": 5.300000000745058,
+		},
 		"UpdateConnectionAliveAt",
-		`mutation UpdateConnectionAliveAt { 
-													userSetConnectionAlive
+		`mutation UpdateConnectionAliveAt($networkRttInMs: Float!) { 
+													userSetConnectionAlive(
+													networkRttInMs: $networkRttInMs
+													)
 												}
 	`)
 }
+
+//{"id":"186","type":"start","payload":{"variables":{"networkRttInMs":5.300000000745058},"extensions":{},"operationName":"UpdateConnectionAliveAt","query":"mutation UpdateConnectionAliveAt($networkRttInMs: Float!) {\n  userSetConnectionAlive(networkRttInMs: $networkRttInMs)\n}"}}
 
 func SendUserCurrentSubscription(user *common.User) {
 	user.UserCurrentSubscriptionId = GetCurrMessageId(user)
@@ -463,8 +498,8 @@ func SendUserCurrentSubscription(user *common.User) {
 		user,
 		user.UserCurrentSubscriptionId,
 		make(map[string]interface{}),
-		"userCurrentSubscription",
-		`subscription userCurrentSubscription { user_current { authed banned joined __typename } }`)
+		"userCurrentSubscriptionStressTest",
+		`subscription userCurrentSubscriptionStressTest { user_current { authed banned joined __typename } }`)
 
 	common.AddSubscriptionSent()
 }
@@ -501,43 +536,62 @@ func SendSubscriptionsBatch(user *common.User) {
 
 	var subscriptions []string
 
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {\n  user_aggregate {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  meeting {    meetingId    isBreakout    lockSettings {      disableCam      disableMic      disableNotes      disablePrivateChat      disablePublicChat      hasActiveLockSetting      hideUserList      hideViewersCursor      webcamsOnlyForModerator      __typename    }    usersPolicies {      allowModsToEjectCameras      allowModsToUnmuteUsers      authenticatedGuest      guestPolicy      maxUserConcurrentAccesses      maxUsers      meetingLayout      userCameraCap      webcamsOnlyForModerator      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {\n  user_aggregate {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  meeting {    meetingId    isBreakout    lockSettings {      disableCam      disableMic      disableNotes      disablePrivateChat      disablePublicChat      hasActiveLockSetting      hideUserList      hideViewersCursor      webcamsOnlyForModerator      __typename    }    usersPolicies {      allowModsToEjectCameras      allowModsToUnmuteUsers      authenticatedGuest      guestPolicy      maxUserConcurrentAccesses      maxUsers      meetingLayout      userCameraCap      webcamsOnlyForModerator      __typename    }    __typename  }}"}}`)
-	//subscriptions = append(subscriptions, `{"id":"33","type":"start","payload":{"variables":{},"extensions":{},"operationName":"CurrentPresentationPagesSubscription","query":"subscription CurrentPresentationPagesSubscription {  pres_page_curr {    height    isCurrentPage    num    pageId    scaledHeight    scaledViewBoxHeight    scaledViewBoxWidth    scaledWidth    svgUrl: urlsJson(path: \\"$.svg\\\`)    width    xOffset    yOffset    presentationId    content    downloadFileUri    totalPages    downloadable    presentationName    isDefaultPresentation    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  poll {    published    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  poll(where: {published: {_eq: true}}, order_by: [{publishedAt: desc}], limit: 1) {    ended    published    publishedAt    pollId    type    questionText    responses {      optionDesc      optionId      optionResponsesCount      pollResponsesCount      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"CursorSubscription","query":"subscription CursorSubscription {  pres_page_cursor {    isCurrentPage    lastUpdatedAt    pageId    presentationId    userId    xPercent    yPercent    user {      name      presenter      role      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{"lastUpdatedAt":"1970-01-01T00:00:00.000Z"},"extensions":{},"operationName":"annotationsStream","query":"subscription annotationsStream($lastUpdatedAt: timestamptz) {  pres_annotation_curr_stream(    batch_size: 10    cursor: {initial_value: {lastUpdatedAt: $lastUpdatedAt}}  ) {    annotationId    annotationInfo    lastUpdatedAt    pageId    presentationId    userId    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"PresentationsSubscription","query":"subscription PresentationsSubscription {  pres_presentation {    uploadInProgress    current    downloadFileUri    downloadable    uploadErrorDetailsJson    uploadErrorMsgKey    filenameConverted    isDefault    name    totalPages    totalPagesUploaded    presentationId    removable    uploadCompleted    exportToChatInProgress    exportToChatStatus    exportToChatCurrentPage    exportToChatHasError    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"PresentationsSubscription","query":"subscription PresentationsSubscription {  pres_presentation {    uploadInProgress    current    downloadFileUri    downloadable    uploadErrorDetailsJson    uploadErrorMsgKey    filenameConverted    isDefault    name    totalPages    totalPagesUploaded    presentationId    removable    uploadCompleted    __typename  }}"}}`)
-	//new
-	//subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"hasPendingPoll","query":"subscription hasPendingPoll($userId: String!) {  meeting {    polls(      where: {ended: {_eq: false}, users: {responded: {_eq: false}, userId: {_eq: $userId}}, userCurrent: {responded: {_eq: false}}}    ) {      users {        responded        userId        __typename      }      options {        optionDesc        optionId        pollId        __typename      }      multipleResponses      pollId      questionText      secret      type      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"getServerTime","query":"query getServerTime {  current_time {    currentTimestamp    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  chat(    order_by: [{public: desc}, {totalUnread: desc}, {participant: {name: asc, userId: asc}}]  ) {    chatId    participant {      userId      name      role      color      loggedOut      avatar      isOnline      isModerator      __typename    }    totalMessages    totalUnread    public    lastSeenAt    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"MeetingSubscription","query":"subscription MeetingSubscription {  meeting {    createdTime    disabledFeatures    durationInSeconds    extId    lockSettings {      disableCam      disableMic      disableNotes      disablePrivateChat      disablePublicChat      hasActiveLockSetting      hideUserList      hideViewersCursor      hideViewersAnnotation      webcamsOnlyForModerator      __typename    }    maxPinnedCameras    meetingCameraCap    meetingId    name    notifyRecordingIsOn    presentationUploadExternalDescription    presentationUploadExternalUrl    recordingPolicies {      allowStartStopRecording      autoStartRecording      record      keepEvents      __typename    }    screenshare {      hasAudio      screenshareId      stream      vidHeight      vidWidth      voiceConf      screenshareConf      __typename    }    usersPolicies {      allowModsToEjectCameras      allowModsToUnmuteUsers      authenticatedGuest      guestPolicy      maxUserConcurrentAccesses      maxUsers      meetingLayout      moderatorsCanMuteAudio      moderatorsCanUnmuteAudio      userCameraCap      webcamsOnlyForModerator      guestLobbyMessage      __typename    }    isBreakout    breakoutPolicies {      breakoutRooms      captureNotes      captureNotesFilename      captureSlides      captureSlidesFilename      freeJoin      parentId      privateChatEnabled      record      sequence      __typename    }    html5InstanceId    voiceSettings {      dialNumber      muteOnStart      voiceConf      telVoice      __typename    }    externalVideo {      externalVideoId      playerCurrentTime      playerPlaybackRate      playerPlaying      externalVideoUrl      startedSharingAt      stoppedSharingAt      updatedAt      __typename    }    componentsFlags {      hasCaption      hasBreakoutRoom      hasExternalVideo      hasPoll      hasScreenshare      hasTimer      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"userCurrentSubscription","query":"subscription userCurrentSubscription {  user_current {    authed    avatar    banned    enforceLayout    cameras {      streamId      __typename    }    clientType    color    customParameters {      parameter      value      __typename    }    disconnected    away    raiseHand    emoji    extId    guest    guestStatus    hasDrawPermissionOnCurrentPage    isDialIn    isModerator    joined    lastBreakoutRoom {      breakoutRoomId      currentlyInRoom      isDefaultName      sequence      shortName      __typename    }    userClientSettings {      userClientSettingsJson      __typename    }    locked    loggedOut    mobile    name    pinned    presenter    registeredOn    role    userId    speechLocale    voice {      joined      muted      spoke      talking      listenOnly      __typename    }    __typename  }}"}}`)
-	//new
-	//subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"Users","query":"subscription Users($offset: Int!, $limit: Int!) {  user(    limit: $limit    offset: $offset    order_by: [{role: asc}, {raiseHandTime: asc_nulls_last}, {awayTime: asc_nulls_last}, {emojiTime: asc_nulls_last}, {isDialIn: desc}, {hasDrawPermissionOnCurrentPage: desc}, {nameSortable: asc}, {userId: asc}]  ) {    userId    extId    name    isModerator    role    color    avatar    away    raiseHand    emoji    avatar    presenter    pinned    locked    authed    mobile    guest    clientType    disconnected    loggedOut    voice {      joined      listenOnly      talking      muted      voiceUserId      __typename    }    cameras {      streamId      __typename    }    presPagesWritable {      isCurrentPage      pageId      userId      __typename    }    lastBreakoutRoom {      isDefaultName      sequence      shortName      currentlyInRoom      __typename    }    reaction {      reactionEmoji      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{"offset":0,"limit":0},"extensions":{},"operationName":"Users","query":"subscription Users($offset: Int!, $limit: Int!) {  user(    limit: $limit    offset: $offset    order_by: [{role: asc}, {raiseHandTime: asc_nulls_last}, {awayTime: asc_nulls_last}, {emojiTime: asc_nulls_last}, {isDialIn: desc}, {hasDrawPermissionOnCurrentPage: desc}, {nameSortable: asc}, {userId: asc}]  ) {    userId    extId    name    isModerator    role    color    avatar    away    raiseHand    emoji    avatar    presenter    pinned    locked    authed    mobile    guest    clientType    disconnected    loggedOut    voice {      joined      listenOnly      talking      muted      voiceUserId      __typename    }    cameras {      streamId      __typename    }    presPagesWritable {      isCurrentPage      pageId      userId      __typename    }    lastBreakoutRoom {      isDefaultName      sequence      shortName      currentlyInRoom      __typename    }    reaction {      reactionEmoji      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"getMeetingRecordingPolicies","query":"subscription getMeetingRecordingPolicies {  meeting_recordingPolicies {    allowStartStopRecording    autoStartRecording    record    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"getMeetingRecordingData","query":"subscription getMeetingRecordingData {  meeting_recording {    isRecording    startedAt    startedBy    previousRecordedTimeInSeconds    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  user_connectionStatusReport {    user {      userId      name      avatar      color      isModerator      isOnline      __typename    }    clientNotResponding    lastUnstableStatus    lastUnstableStatusAt    currentStatus    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"subscription {  user_connectionStatus {    connectionAliveAt    userClientResponseAt    status    statusUpdatedAt    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{"limit":8},"extensions":{},"operationName":"TalkingIndicatorSubscription","query":"subscription TalkingIndicatorSubscription($limit: Int!) {  user_voice(    where: {showTalkingIndicator: {_eq: true}}    order_by: [{startTime: desc_nulls_last}, {endTime: desc_nulls_last}]    limit: $limit  ) {    callerName    spoke    talking    floor    startTime    muted    userId    user {      color      name      speechLocale      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"getIsBreakout","query":"subscription getIsBreakout {  meeting {    meetingId    isBreakout    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"MySubscription","query":"subscription MySubscription {  timer {    accumulated    active    songTrack    time    stopwatch    running    startedAt    endedAt    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"ProcessedPresentationsSubscription","query":"subscription ProcessedPresentationsSubscription {  pres_presentation(where: {uploadCompleted: {_eq: true}}) {    current    name    presentationId    __typename  }}"}}`)
-	//new
-	//subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"operationName":"UpdateConnectionAliveAt","query":"mutation UpdateConnectionAliveAt($userId: String, $connectionAliveAt: timestamp) {  update_user_connectionStatus(where: {}, _set: {connectionAliveAt: \\"now()\\"}) {    affected_rows    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{"chatId":"MAIN-PUBLIC-GROUP-CHAT"},"extensions":{},"operationName":"IsTyping","query":"subscription IsTyping($chatId: String!) {  user_typing_public(    order_by: {startedTypingAt: asc}    limit: 4    where: {isCurrentlyTyping: {_eq: true}, chatId: {_eq: $chatId}}  ) {    chatId    userId    isCurrentlyTyping    user {      name      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{"chatId":"MAIN-PUBLIC-GROUP-CHAT"},"extensions":{},"operationName":"GetChatData","query":"query GetChatData($chatId: String!) {  chat(where: {chatId: {_eq: $chatId}}) {    chatId    public    participant {      name      __typename    }    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{},"extensions":{},"query":"{  user_welcomeMsgs {    welcomeMsg    welcomeMsgForModerators    __typename  }}"}}`)
-	subscriptions = append(subscriptions, `{"id":"`+strconv.Itoa(GetCurrMessageId(user))+`","type":"start","payload":{"variables":{"offset":0,"limit":50},"extensions":{},"operationName":"Patched_chatMessages","query":"subscription Patched_chatMessages($limit: Int!, $offset: Int!) {  chat_message_public(limit: $limit, offset: $offset, order_by: {createdAt: asc}) {    user {      name      userId      avatar      isOnline      isModerator      color      __typename    }    messageType    chatEmphasizedText    chatId    message    messageId    createdAt    messageMetadata    senderName    senderRole    __typename  }}"}}`)
+	dir := "./subscriptions"
+
+	// Walk the directory
+	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println("Error accessing path:", path, err)
+			return err
+		}
+
+		// Check if the file has a .txt extension
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
+			//fmt.Println("Reading file:", path)
+
+			// Open the .txt file
+			file, err := os.Open(path)
+			if err != nil {
+				fmt.Println("Error opening file:", err)
+				return err
+			}
+			defer file.Close()
+
+			// Read and print the file's contents
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				textFromFile := scanner.Text()
+
+				pattern := `"id":"\d+"`
+
+				re, err := regexp.Compile(pattern)
+				if err != nil {
+					fmt.Println("Error compiling regex:", err)
+				}
+
+				replacement := fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user))
+				textFromFileWithNewId := re.ReplaceAllString(textFromFile, replacement)
+
+				subscriptions = append(subscriptions, textFromFileWithNewId)
+			}
+
+			if err := scanner.Err(); err != nil {
+				fmt.Println("Error reading file:", err)
+				return err
+			}
+
+			//fmt.Println("-----") // Separator for file content
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Println("Error walking through directory:", err)
+	}
 
 	for _, v := range subscriptions {
-		user.Logger.Debugf("Sending %s", v[0:30])
+		user.Logger.Debugf("Sending %s", strings.ReplaceAll(v, "\n", " ")[0:30])
 		//user.Logger.Infoln(v)
 		user.WsConnectionMutex.Lock()
 		err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(v))
@@ -548,5 +602,4 @@ func SendSubscriptionsBatch(user *common.User) {
 		}
 		common.AddSubscriptionSent()
 	}
-
 }
