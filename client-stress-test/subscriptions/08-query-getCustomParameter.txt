@@ -1,7 +1,0 @@
-{"id":"8","payload":{"extensions":{},"operationName":"getCustomParameter","query":"query getCustomParameter {
-  user_customParameter {
-    parameter
-    value
-    __typename
-  }
-}","variables":{}},"type":"start"}

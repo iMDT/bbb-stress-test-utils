@@ -1,0 +1,1 @@
+{"id":"88aa52c3-9d60-483a-80fe-32ff1a7ca46b","payload":{"extensions":{},"operationName":"CurrentUserConnStatus","query":"subscription CurrentUserConnStatus($userId: String!) {\n  user_connectionStatusReport(where: {user: {userId: {_eq: $userId}}}) {\n    currentStatus\n    __typename\n  }\n}","variables":{"userId":"w_yixrkoyecnnf"}},"type":"subscribe"}

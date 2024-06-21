@@ -1,6 +1,0 @@
-{"id":"30","payload":{"extensions":{},"operationName":"CurrentUserConnStatus","query":"subscription CurrentUserConnStatus($userId: String!) {
-  user_connectionStatusReport(where: {user: {userId: {_eq: $userId}}}) {
-    currentStatus
-    __typename
-  }
-}","variables":{"userId":"w_9urlbinx1ihf"}},"type":"start"}

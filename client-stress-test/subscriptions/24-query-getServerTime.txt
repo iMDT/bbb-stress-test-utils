@@ -1,6 +1,0 @@
-{"id":"24","payload":{"extensions":{},"operationName":"getServerTime","query":"query getServerTime {
-  current_time {
-    currentTimestamp
-    __typename
-  }
-}","variables":{}},"type":"start"}

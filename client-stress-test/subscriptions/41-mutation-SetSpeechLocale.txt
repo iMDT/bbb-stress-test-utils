@@ -1,3 +1,0 @@
-{"id":"41","payload":{"extensions":{},"operationName":"SetSpeechLocale","query":"mutation SetSpeechLocale($locale: String!, $provider: String!) {
-  userSetSpeechLocale(locale: $locale, provider: $provider)
-}","variables":{"locale":"","provider":"webspeech"}},"type":"start"}

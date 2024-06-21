@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"io/ioutil"
 	"math/rand"
@@ -168,7 +169,7 @@ func handleWsMessages(user *common.User) {
 				user.ConnAckReceived = true
 				SendUserCurrentSubscription(user)
 			}
-		case "data":
+		case "next":
 			if user.Problem {
 				user.Logger.Infof("Received data Id: %s", msg.Id)
 				user.Logger.Infof("Received data: %s", msg)
@@ -243,7 +244,7 @@ func handleWsMessages(user *common.User) {
 												time.Sleep(2 * time.Second)
 
 												//for i := 0; i < 25; i++ {
-												//	time.Sleep(1000 * time.Millisecond)
+												//	//time.Sleep(1000 * time.Millisecond)
 												//	SendSubscriptionsBatch(user)
 												//}
 
@@ -263,6 +264,18 @@ func handleWsMessages(user *common.User) {
 					}
 				}
 
+			}
+
+			payloadAsJsonByte, err := json.Marshal(msg.Payload)
+			if err != nil {
+				user.Logger.Printf("error marshalling connection_init message: %v", err)
+				return
+			}
+
+			//fmt.Println(string(payloadAsJsonByte))
+			if strings.Contains(string(payloadAsJsonByte), "chat_message_public") {
+				log.Info("Received chat message, sending last seen mutation")
+				SendUpdateChatLastSeenAt(user)
 			}
 
 			//if user.UserCurrentSubscriptionId
@@ -357,6 +370,9 @@ func SendConnectionInitMessage(user *common.User) {
 		"payload": map[string]map[string]string{
 			"headers": {
 				"X-Session-Token":            user.SessionToken,
+				"X-ClientSessionUUID":        "myUid" + user.SessionToken,
+				"X-ClientType":               "HTML5",
+				"X-ClientIsMobile":           "false",
 				"X-Session-Benchmarking":     fmt.Sprintf("%t", user.Benchmarking),
 				"X-Session-BenchmarkingName": fmt.Sprintf("%s", user.Name),
 			},
@@ -397,7 +413,7 @@ func SendGenericGraphqlMessage(user *common.User, messageId int, variables map[s
 		} `json:"payload"`
 	}{
 		ID:   fmt.Sprintf("%d", messageId),
-		Type: "start",
+		Type: "subscribe",
 		Payload: struct {
 			Variables     map[string]interface{} `json:"variables"`
 			Extensions    map[string]interface{} `json:"extensions"`
@@ -481,12 +497,38 @@ func SendUpdateConnectionAliveAt(user *common.User, messageId int) {
 		},
 		"UpdateConnectionAliveAt",
 		`mutation UpdateConnectionAliveAt($networkRttInMs: Float!) { 
-													userSetConnectionAlive(
-													networkRttInMs: $networkRttInMs
-													)
-												}
+					userSetConnectionAlive(networkRttInMs: $networkRttInMs)
+				}
 	`)
 }
+
+func SendUpdateChatLastSeenAt(user *common.User) {
+	now := time.Now()
+
+	SendGenericGraphqlMessage(
+		user,
+		GetCurrMessageId(user),
+		map[string]interface{}{
+			"chatId":     "MAIN-PUBLIC-GROUP-CHAT",
+			"lastSeenAt": now.Format("2006-01-02T15:04:05.999Z"),
+		},
+		"UpdateChatUser",
+		`mutation UpdateChatUser($chatId: String, $lastSeenAt: timestamptz) { 
+					update_chat_user(where: {chatId: {_eq: $chatId}, _or: [{lastSeenAt: {_lt: $lastSeenAt}}, {lastSeenAt: {_is_null: true}}]}
+						_set: {lastSeenAt: $lastSeenAt}
+					)
+					{ affected_rows    __typename  }
+				}
+	`)
+}
+
+//{"id":"c0e04c63-8d4f-49d0-b596-76b8d4dfb34c",
+//"type":"subscribe",
+//"operationName":"UpdateChatUser",
+//"query":"mutation UpdateChatUser($chatId: String, $lastSeenAt: timestamptz) {
+//	\n  update_chat_user(where: {chatId: {_eq: $chatId}, _or: [{lastSeenAt: {_lt: $lastSeenAt}}, {lastSeenAt: {_is_null: true}}]}\n
+//	_set: {lastSeenAt: $lastSeenAt}\n  )
+//	{\n    affected_rows\n    __typename\n  }\n}"}}
 
 //{"id":"186","type":"start","payload":{"variables":{"networkRttInMs":5.300000000745058},"extensions":{},"operationName":"UpdateConnectionAliveAt","query":"mutation UpdateConnectionAliveAt($networkRttInMs: Float!) {\n  userSetConnectionAlive(networkRttInMs: $networkRttInMs)\n}"}}
 
@@ -515,13 +557,14 @@ func SendJoinMessage(user *common.User) {
 		user,
 		user.UserJoinMutationId,
 		map[string]interface{}{
-			"authToken":  user.AuthToken,
-			"clientType": "HTML5",
+			"authToken":      user.AuthToken,
+			"clientType":     "HTML5",
+			"clientIsMobile": false,
 		},
 		"UserJoin",
-		`mutation UserJoin($authToken: String!, $clientType: String!) { 
-												userJoinMeeting(authToken: $authToken, clientType: $clientType)
-												}`)
+		`mutation UserJoin($authToken: String!, $clientType: String!, $clientIsMobile: Boolean!) { 
+						userJoinMeeting(authToken: $authToken, clientType: $clientType, clientIsMobile: $clientIsMobile,)
+				}`)
 }
 
 func SendSubscriptionsBatch(user *common.User) {
@@ -537,8 +580,15 @@ func SendSubscriptionsBatch(user *common.User) {
 
 	dir := "./subscriptions"
 
-	pattern := `"id":"\d+"`
-	re, errPattern := regexp.Compile(pattern)
+	//1aa40053-6219-4bd8-8e6d-2d092b139bed
+	patternQueryId := `"id":"[\d\w\-]+"`
+	reQueryId, errPattern := regexp.Compile(patternQueryId)
+	if errPattern != nil {
+		fmt.Println("Error compiling regex:", errPattern)
+	}
+
+	patternUserId := `"userId":"\d+"`
+	reUserId, errPattern := regexp.Compile(patternUserId)
 	if errPattern != nil {
 		fmt.Println("Error compiling regex:", errPattern)
 	}
@@ -552,8 +602,11 @@ func SendSubscriptionsBatch(user *common.User) {
 
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
 			if fileContent, lastContentErr := ioutil.ReadFile(path); lastContentErr == nil && string(fileContent) != "" {
-				replacement := fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user))
-				textFromFileWithNewId := re.ReplaceAllString(string(fileContent), replacement)
+				replacementQueryId := fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user))
+				textFromFileWithNewId := reQueryId.ReplaceAllString(string(fileContent), replacementQueryId)
+
+				replacementUserId := fmt.Sprintf(`"userId":"%s"`, user.UserId)
+				textFromFileWithNewId = reUserId.ReplaceAllString(textFromFileWithNewId, replacementUserId)
 
 				subscriptions = append(subscriptions, textFromFileWithNewId)
 			}
@@ -567,7 +620,8 @@ func SendSubscriptionsBatch(user *common.User) {
 	}
 
 	for _, v := range subscriptions {
-		user.Logger.Debugf("Sending %s", strings.ReplaceAll(v, "\n", " ")[0:30])
+		user.Logger.Debugf("Sending %s", strings.ReplaceAll(v, "\n", " ")[0:60])
+		//user.Logger.Debugf("Sending %s", v)
 		//user.Logger.Infoln(v)
 		user.WsConnectionMutex.Lock()
 		err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(v))
@@ -577,5 +631,6 @@ func SendSubscriptionsBatch(user *common.User) {
 			return
 		}
 		common.AddSubscriptionSent()
+		//time.Sleep(3 * time.Second)
 	}
 }

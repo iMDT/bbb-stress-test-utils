@@ -1,8 +1,0 @@
-{"id":"34","payload":{"extensions":{},"operationName":"ProcessedPresentationsSubscription","query":"subscription ProcessedPresentationsSubscription {
-  pres_presentation(where: {uploadCompleted: {_eq: true}}) {
-    current
-    name
-    presentationId
-    __typename
-  }
-}","variables":{}},"type":"start"}

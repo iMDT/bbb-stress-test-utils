@@ -1,0 +1,1 @@
+{"id":"ccca3adb-cf6b-4233-b7f4-7a2844208b0d","payload":{"extensions":{},"operationName":"getCustomParameter","query":"query getCustomParameter {\n  user_customParameter {\n    parameter\n    value\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

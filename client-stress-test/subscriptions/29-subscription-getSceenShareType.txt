@@ -1,0 +1,1 @@
+{"id":"af1d7eaa-d838-4dd0-ac5e-0689bc4fd819","payload":{"extensions":{},"operationName":"getSceenShareType","query":"subscription getSceenShareType {\n  screenshare {\n    contentType\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

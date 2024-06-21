@@ -1,0 +1,1 @@
+{"id":"af96c869-a210-4f9a-8d35-580ed2a94a4e","payload":{"extensions":{},"operationName":"PollPublished","query":"subscription PollPublished {\n  poll {\n    published\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

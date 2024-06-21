@@ -1,17 +1,1 @@
-{"id":"1","payload":{"extensions":{},"operationName":"getUserCurrent","query":"subscription getUserCurrent {
-  user_current {
-    userId
-    authToken
-    joinErrorCode
-    joinErrorMessage
-    joined
-    ejectReasonCode
-    meeting {
-      ended
-      endedReasonCode
-      endedByUserName
-      __typename
-    }
-    __typename
-  }
-}","variables":{}},"type":"start"}
+{"id":"b2f3dd8f-8005-400b-a15a-355dda6af109","payload":{"extensions":{},"operationName":"getUserCurrent","query":"subscription getUserCurrent {\n  user_current {\n    userId\n    authToken\n    joinErrorCode\n    joinErrorMessage\n    joined\n    ejectReasonCode\n    loggedOut\n    guestStatus\n    meeting {\n      ended\n      endedReasonCode\n      endedByUserName\n      logoutUrl\n      __typename\n    }\n    guestStatusDetails {\n      guestLobbyMessage\n      positionInWaitingQueue\n      isAllowed\n      __typename\n    }\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

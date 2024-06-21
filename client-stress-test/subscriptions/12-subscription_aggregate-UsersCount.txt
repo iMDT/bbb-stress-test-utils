@@ -1,9 +1,0 @@
-{"id":"12","payload":{"extensions":{},"operationName":"UsersCount","query":"subscription UsersCount {
-  user_aggregate {
-    aggregate {
-      count
-      __typename
-    }
-    __typename
-  }
-}","variables":{}},"type":"start"}

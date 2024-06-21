@@ -12,7 +12,6 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"os/exec"
-	"runtime/pprof"
 	"strconv"
 	"strings"
 	"time"
@@ -21,19 +20,6 @@ import (
 var currNumOfMsgs int64 = 1
 
 func main() {
-	f, err := os.Create("cpu.prof")
-	if err != nil {
-		log.Fatal("count not create CPU profile: ", err)
-	}
-
-	defer f.Close()
-
-	if err := pprof.StartCPUProfile(f); err != nil {
-		log.Fatal("could not start CPU profile: ", err)
-	}
-
-	defer pprof.StopCPUProfile()
-
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Jar: jar,
@@ -88,14 +74,27 @@ func main() {
 		go benchmarking(meetingId)
 	}
 
+	var users []string
+
 	for i := 0; i < config.NumOfUsers; i++ {
 		name := fmt.Sprintf("Student %0*d", 5, i)
-		go addNewUser(meetingId, name, false)
-
-		rand.Seed(time.Now().UnixNano())
-		delayBetweenJoins := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MaxIntervalBetweenUserJoinInMs
-		time.Sleep(time.Duration(delayBetweenJoins) * time.Millisecond)
+		users = append(users, name)
 	}
+
+	rand.Seed(time.Now().UnixNano())
+
+	// Randomize list
+	rand.Shuffle(len(users), func(i, j int) {
+		users[i], users[j] = users[j], users[i]
+	})
+
+	for _, name := range users {
+		go addNewUser(meetingId, name, false)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	delayBetweenJoins := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MaxIntervalBetweenUserJoinInMs
+	time.Sleep(time.Duration(delayBetweenJoins) * time.Millisecond)
 
 	//log.Infof("Waiting to finish....")
 

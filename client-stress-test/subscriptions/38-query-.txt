@@ -1,7 +1,0 @@
-{"id":"38","payload":{"extensions":{},"query":"{
-  user_welcomeMsgs {
-    welcomeMsg
-    welcomeMsgForModerators
-    __typename
-  }
-}","variables":{}},"type":"start"}
