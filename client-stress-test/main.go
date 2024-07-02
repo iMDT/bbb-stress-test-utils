@@ -25,6 +25,11 @@ func main() {
 		Jar: jar,
 	}
 
+	if len(os.Args) > 1 {
+		fmt.Printf("config name: %s\n", os.Args[1])
+		common.SetConfigFile(os.Args[1])
+	}
+
 	config := common.GetConfig()
 
 	//logrus := logrus.New()

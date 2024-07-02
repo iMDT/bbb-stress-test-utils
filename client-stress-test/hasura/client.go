@@ -2,10 +2,10 @@ package hasura
 
 import (
 	"bbb-stress-test/common"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"io/ioutil"
 	"math/rand"
@@ -102,19 +102,28 @@ func StartUser(user *common.User) {
 		}
 	}()
 
+	if user.Benchmarking {
+		go func() {
+			for {
+				time.Sleep(5 * time.Second)
+				SendPeriodicChatMessage(user, GetCurrMessageId(user))
+			}
+		}()
+	}
+
 	go handleWsMessages(user)
 	SendConnectionInitMessage(user)
 
-	if user.Benchmarking {
-		for {
-			if user.Joined && user.Pong && user.Chat {
-				break
-			}
-			time.Sleep(1 * time.Second)
-		}
-	} else {
-		time.Sleep(time.Duration(user.TimeToLive) * time.Second)
-	}
+	//if user.Benchmarking {
+	//	for {
+	//		if user.Joined && user.Pong && user.Chat {
+	//			break
+	//		}
+	//		time.Sleep(1 * time.Second)
+	//	}
+	//} else {
+	time.Sleep(time.Duration(user.TimeToLive) * time.Second)
+	//}
 
 }
 
@@ -131,18 +140,24 @@ func handleWsMessages(user *common.User) {
 			return
 		}
 
-		type Message struct {
-			Type    string      `json:"type"`
-			Id      string      `json:"id"`
-			Payload interface{} `json:"payload"`
-			//Payload map[string]interface{} `json:"payload"`
+		type HasuraMessageInfo struct {
+			Type string `json:"type"`
+			Id   string `json:"id"`
+		}
+
+		type HasuraMessage struct {
+			Type    string `json:"type"`
+			Id      string `json:"id"`
+			Payload struct {
+				Data map[string]json.RawMessage `json:"data"`
+			} `json:"payload"`
 		}
 
 		//{"id":"41",
 		//"payload":{"data":{"meeting":[{"__typename":"meeting","breakoutPolicies":{"__typename":"meeting_breakoutPolicies","breakoutRooms":[],"captureNotes":false,"captureNotesFilename":"%%CONFNAME%%","captureSlides":false,"captureSlidesFilename":"%%CONFNAME%%","freeJoin":false,"parentId":"bbb-none","privateChatEnabled":true,"record":false,"sequence":0},"componentsFlags":{"__typename":"meeting_componentFlags","hasBreakoutRoom":false,"hasCaption":false,"hasExternalVideo":false,"hasPoll":false,"hasScreenshare":false,"hasTimer":false},"createdTime":1708950207625,"disabledFeatures":[],"durationInSeconds":0,"extId":"random-6403352","externalVideo":null,"html5InstanceId":null,"isBreakout":false,"lockSettings":{"__typename":"meeting_lockSettings","disableCam":false,"disableMic":false,"disableNotes":false,"disablePrivateChat":false,"disablePublicChat":false,"hasActiveLockSetting":false,"hideUserList":false,"hideViewersAnnotation":false,"hideViewersCursor":false,"webcamsOnlyForModerator":false},"maxPinnedCameras":3,"meetingCameraCap":0,"meetingId":"10bbce770f3adc35c305f0d7cc34cfc115530b5a-1708950207625","name":"random-6403352","notifyRecordingIsOn":false,"presentationUploadExternalDescription":"","presentationUploadExternalUrl":"","recordingPolicies":{"__typename":"meeting_recordingPolicies","allowStartStopRecording":true,"autoStartRecording":false,"keepEvents":false,"record":false},"screenshare":null,"usersPolicies":{"__typename":"v_meeting_usersPolicies","allowModsToEjectCameras":false,"allowModsToUnmuteUsers":false,"authenticatedGuest":true,"guestLobbyMessage":null,"guestPolicy":"ALWAYS_ACCEPT","maxUserConcurrentAccesses":3,"maxUsers":0,"meetingLayout":"CUSTOM_LAYOUT","moderatorsCanMuteAudio":true,"moderatorsCanUnmuteAudio":false,"userCameraCap":3,"webcamsOnlyForModerator":false},"voiceSettings":{"__typename":"meeting_voiceSettings","dialNumber":"613-555-1234","muteOnStart":false,"telVoice":"73939","voiceConf":"73939"}}]}},
 		//"type":"data"}
 
-		var msg Message
+		var msg HasuraMessageInfo
 		err = json.Unmarshal(message, &msg)
 		if err != nil {
 			user.Logger.Println("error on unmarshal message:", err)
@@ -212,70 +227,82 @@ func handleWsMessages(user *common.User) {
 					user.BenchmarkingMetrics["user_current_data_received"] = time.Since(user.CreatedTime)
 				}
 
-				if messageAsMap, okMessageAsMap := msg.Payload.(map[string]interface{}); okMessageAsMap {
-					if data, okData := messageAsMap["data"].(map[string]interface{}); okData {
-						for _, dataItem := range data {
-							if currentDataProp, okCurrentDataProp := dataItem.([]interface{}); okCurrentDataProp {
-								if okCurrentDataProp && len(currentDataProp) > 0 {
-									firstItemOfMessage := currentDataProp[0]
-									if firstItemOfMessageAsMap, currDataOk := firstItemOfMessage.(map[string]interface{}); currDataOk {
-										if joinedValue, okJoinedValue := firstItemOfMessageAsMap["joined"].(bool); okJoinedValue {
-											//user.Logger.Infof("Joined: %t", joinedValue)
+				var hasuraMessage HasuraMessage
+				err = json.Unmarshal(message, &hasuraMessage)
+				if err != nil {
+					user.Logger.Println("error on unmarshal message:", err)
+					user.Logger.Debugf("%v", hasuraMessage)
+					continue
+				}
 
-											if joinedValue && !user.Joined {
-												if user.Benchmarking {
-													user.BenchmarkingMetrics["join_received"] = time.Since(user.CreatedTime)
-													//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Joined:")
-												}
+				var messagePayloadData []interface{}
+				if err := json.Unmarshal(hasuraMessage.Payload.Data["user_current"], &messagePayloadData); err != nil {
+					panic(err)
+				}
 
-												user.Logger.Infoln("Joined successfully.")
-												user.Joined = true
-												user.Problem = false
+				//currentDataProp := "user_current"
+				//payloadDataAsMap := messagePayloadData.([]interface{})
 
-												if !user.Benchmarking {
-													common.AddJoinedUser()
-												}
+				if len(messagePayloadData) > 0 {
+					firstItemOfMessage := messagePayloadData[0]
+					if firstItemOfMessageAsMap, currDataOk := firstItemOfMessage.(map[string]interface{}); currDataOk {
+						if joinedValue, okJoinedValue := firstItemOfMessageAsMap["joined"].(bool); okJoinedValue {
+							//user.Logger.Infof("Joined: %t", joinedValue)
 
-												if user.Benchmarking {
-													SendUpdateConnectionAliveAtBenchmarking(user)
-												}
-
-												//Wait for re-connection
-												time.Sleep(2 * time.Second)
-
-												//for i := 0; i < 25; i++ {
-												//	//time.Sleep(1000 * time.Millisecond)
-												//	SendSubscriptionsBatch(user)
-												//}
-
-												SendSubscriptionsBatch(user)
-
-												if !user.Benchmarking {
-													//SendSubscriptionsBatch(user)
-													SendChatMessages(user)
-												}
-											}
-										}
-									}
+							if joinedValue && !user.Joined {
+								if user.Benchmarking {
+									user.BenchmarkingMetrics["join_received"] = time.Since(user.CreatedTime)
+									//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Joined:")
 								}
 
+								user.Logger.Infoln("Joined successfully.")
+								user.Joined = true
+								user.Problem = false
+
+								if !user.Benchmarking {
+									common.AddJoinedUser()
+								}
+
+								if user.Benchmarking {
+									SendUpdateConnectionAliveAtBenchmarking(user)
+								}
+
+								//Wait for re-connection
+								time.Sleep(2 * time.Second)
+
+								//for i := 0; i < 25; i++ {
+								//	//time.Sleep(1000 * time.Millisecond)
+								//	SendSubscriptionsBatch(user)
+								//}
+
+								SendSubscriptionsBatch(user)
+
+								if !user.Benchmarking {
+									//SendSubscriptionsBatch(user)
+									SendChatMessages(user)
+								}
 							}
 						}
 					}
 				}
-
 			}
 
-			payloadAsJsonByte, err := json.Marshal(msg.Payload)
-			if err != nil {
-				user.Logger.Printf("error marshalling connection_init message: %v", err)
-				return
-			}
+			//payloadAsJsonByte, err := json.Marshal(msg.Payload)
+			//if err != nil {
+			//	user.Logger.Printf("error marshalling connection_init message: %v", err)
+			//	return
+			//}
 
 			//fmt.Println(string(payloadAsJsonByte))
-			if strings.Contains(string(payloadAsJsonByte), "chat_message_public") {
-				log.Info("Received chat message, sending last seen mutation")
+			if bytes.Contains(message, []byte("chat_message_public")) {
 				SendUpdateChatLastSeenAt(user)
+
+				//check if it is the message I sent
+				if bytes.Contains(message, []byte("MY MSG "+strconv.Itoa(user.PeriodicChatMessageCounter))) {
+					//log.Info("Received chat message, sending last seen mutation")
+					user.Logger.Info(string(message))
+					user.PeriodicChatMessageMutationId = 0
+				}
 			}
 
 			//if user.UserCurrentSubscriptionId
@@ -289,6 +316,10 @@ func handleWsMessages(user *common.User) {
 					user.Logger.Infoln("Chat successfully COMPLETE.")
 					user.Chat = true
 				}
+			}
+
+			if msg.Id == fmt.Sprintf("%d", user.PeriodicChatMessageMutationId) {
+				user.Logger.Infoln("Chat Msg successfully COMPLETE.")
 			}
 
 			if msg.Id == fmt.Sprintf("%d", user.ConnectionAliveMutationId) {
@@ -394,7 +425,7 @@ func WriteToWebSocket(user *common.User, msg map[string]interface{}) {
 	user.WsConnectionMutex.Unlock()
 
 	if err != nil {
-		user.Logger.Println("write:", err)
+		user.Logger.Println("write 1:", err)
 		return
 	}
 }
@@ -429,7 +460,7 @@ func SendGenericGraphqlMessage(user *common.User, messageId int, variables map[s
 
 	msgBytes, err := json.Marshal(subs)
 	if err != nil {
-		user.Logger.Errorf("error marshalling connection_init message: %v", err)
+		user.Logger.Errorf("error marshalling message: %v", err)
 		return
 	}
 
@@ -437,7 +468,8 @@ func SendGenericGraphqlMessage(user *common.User, messageId int, variables map[s
 	err = user.WsConnection.WriteMessage(websocket.TextMessage, msgBytes)
 	user.WsConnectionMutex.Unlock()
 	if err != nil {
-		user.Logger.Println("write:", err)
+		user.Logger.Errorln("write 2:", err)
+		user.Logger.Errorln("message was:", string(msgBytes))
 		return
 	}
 }
@@ -458,7 +490,6 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 			},
 			"ChatSetTyping",
 			`mutation ChatSetTyping($chatId: String!) { chatSetTyping(chatId: $chatId) }`)
-
 		time.Sleep(1 * time.Second)
 	}
 
@@ -477,6 +508,17 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 														chatMessageInMarkdownFormat: $chatMessageInMarkdownFormat
 														) 
 												}`)
+
+	//
+	//
+	//{"id":"6a523c11-5e07-479c-96fd-eb9916f03b7d",
+	//	"type":"subscribe",
+	//	"payload":{
+	//	"variables":{"chatMessageInMarkdownFormat":"ae","chatId":"MAIN-PUBLIC-GROUP-CHAT"},
+	//	"extensions":{},"operationName":"ChatSendMessage",
+	//		"query":"mutation ChatSendMessage($chatId: String!, $chatMessageInMarkdownFormat: String!) " +
+	//		"{\n  chatSendMessage(\n    chatId: $chatId\n    chatMessageInMarkdownFormat: $chatMessageInMarkdownFormat\n  )\n}"}}
+
 }
 
 func SendUpdateConnectionAliveAtBenchmarking(user *common.User) {
@@ -500,6 +542,17 @@ func SendUpdateConnectionAliveAt(user *common.User, messageId int) {
 					userSetConnectionAlive(networkRttInMs: $networkRttInMs)
 				}
 	`)
+}
+
+func SendPeriodicChatMessage(user *common.User, messageId int) {
+	//wait it returned to send the next
+	if user.PeriodicChatMessageMutationId == 0 {
+		user.PeriodicChatMessageMutationId = GetCurrMessageId(user)
+		user.PeriodicChatMessageCounter++
+		msgText := "MY MSG " + strconv.Itoa(user.PeriodicChatMessageCounter)
+		go SendSendGroupChatMessageMsg(user, 0, user.PeriodicChatMessageMutationId, msgText)
+		user.Logger.Infoln("Sent " + msgText)
+	}
 }
 
 func SendUpdateChatLastSeenAt(user *common.User) {
@@ -627,7 +680,7 @@ func SendSubscriptionsBatch(user *common.User) {
 		err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(v))
 		user.WsConnectionMutex.Unlock()
 		if err != nil {
-			user.Logger.Println("write:", err)
+			user.Logger.Println("write 3:", err)
 			return
 		}
 		common.AddSubscriptionSent()

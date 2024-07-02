@@ -1,1 +1,0 @@
-{"id":"87f71686-ae65-4390-bb74-be34bddf8193","payload":{"extensions":{},"operationName":"userIsInvited","query":"subscription userIsInvited {\n  breakoutRoom(where: {joinURL: {_is_null: false}}) {\n    sequence\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

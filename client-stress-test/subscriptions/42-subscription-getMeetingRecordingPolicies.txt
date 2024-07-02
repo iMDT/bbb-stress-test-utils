@@ -1,0 +1,1 @@
+{"id":"127284d9-e7f1-47ed-8d6e-fea84c03fb89","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getMeetingRecordingPolicies","query":"subscription getMeetingRecordingPolicies {\n  meeting_recordingPolicies {\n    allowStartStopRecording\n    autoStartRecording\n    record\n    __typename\n  }\n}"}}

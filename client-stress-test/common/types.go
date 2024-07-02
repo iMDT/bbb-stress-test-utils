@@ -10,27 +10,29 @@ import (
 )
 
 type User struct {
-	UserId                    string
-	SessionToken              string
-	AuthToken                 string
-	Name                      string
-	ApiCookie                 []*http.Cookie
-	WsConnection              *websocket.Conn
-	WsConnectionMutex         sync.Mutex
-	ConnAckReceived           bool
-	UserJoinMutationId        int
-	UserCurrentSubscriptionId int
-	ConnectionAliveMutationId int
-	ChatMessageMutationId     int
-	Joined                    bool
-	Pong                      bool
-	Chat                      bool
-	CurrMessageId             int
-	TimeToLive                int
-	Logger                    *logrus.Entry
-	Benchmarking              bool
-	BenchmarkingLogger        *logrus.Entry
-	BenchmarkingCsvWriter     *csv.Writer
+	UserId                        string
+	SessionToken                  string
+	AuthToken                     string
+	Name                          string
+	ApiCookie                     []*http.Cookie
+	WsConnection                  *websocket.Conn
+	WsConnectionMutex             sync.Mutex
+	ConnAckReceived               bool
+	UserJoinMutationId            int
+	UserCurrentSubscriptionId     int
+	ConnectionAliveMutationId     int
+	ChatMessageMutationId         int
+	PeriodicChatMessageMutationId int
+	PeriodicChatMessageCounter    int
+	Joined                        bool
+	Pong                          bool
+	Chat                          bool
+	CurrMessageId                 int
+	TimeToLive                    int
+	Logger                        *logrus.Entry
+	Benchmarking                  bool
+	BenchmarkingLogger            *logrus.Entry
+	BenchmarkingCsvWriter         *csv.Writer
 	//BenchmarkingJsonFile    *os.File
 	BenchmarkingMetrics map[string]interface{}
 	CreatedTime         time.Time

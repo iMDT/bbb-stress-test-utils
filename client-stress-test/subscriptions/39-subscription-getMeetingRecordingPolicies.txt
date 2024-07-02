@@ -1,1 +1,0 @@
-{"id":"fcd05242-9932-404d-894d-932e2723a1a4","payload":{"extensions":{},"operationName":"getMeetingRecordingPolicies","query":"subscription getMeetingRecordingPolicies {\n  meeting_recordingPolicies {\n    allowStartStopRecording\n    autoStartRecording\n    record\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

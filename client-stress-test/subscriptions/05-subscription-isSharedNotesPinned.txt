@@ -1,1 +1,0 @@
-{"id":"0146625e-7dcb-402a-989c-db6ea44066f4","payload":{"extensions":{},"operationName":"isSharedNotesPinned","query":"subscription isSharedNotesPinned {\n  sharedNotes(where: {pinned: {_eq: true}}) {\n    pinned\n    sharedNotesExtId\n    model\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}

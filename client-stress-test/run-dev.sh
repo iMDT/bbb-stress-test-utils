@@ -1,2 +1,2 @@
 ./build.sh
-./bbb-stress-test
+./bbb-stress-test $1

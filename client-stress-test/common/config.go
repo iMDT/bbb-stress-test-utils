@@ -29,8 +29,14 @@ type Config struct {
 	Debug                              bool     `json:"debug"`
 }
 
+var ConfigFileName = "config.json"
+
+func SetConfigFile(configFileName string) {
+	ConfigFileName = configFileName
+}
+
 func GetConfig() Config {
-	file, err := os.Open("config.json")
+	file, err := os.Open(ConfigFileName)
 	if err != nil {
 		panic(err)
 	}

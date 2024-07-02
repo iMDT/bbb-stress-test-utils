@@ -1,0 +1,1 @@
+{"id":"c77ce02d-93c8-4e75-9561-564c44a9f68e","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getIdUserJoinedABreakout","query":"subscription getIdUserJoinedABreakout {\n  breakoutRoom_aggregate(where: {hasJoined: {_eq: true}}) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

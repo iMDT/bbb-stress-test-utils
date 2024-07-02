@@ -1,1 +1,0 @@
-{"id":"d075ed7f-5152-4906-9acc-259a45241c94","payload":{"extensions":{},"operationName":"ProcessedPresentationsSubscription","query":"subscription ProcessedPresentationsSubscription {\n  pres_presentation(where: {uploadCompleted: {_eq: true}}) {\n    current\n    name\n    presentationId\n    __typename\n  }\n}","variables":{}},"type":"subscribe"}
