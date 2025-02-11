@@ -60,7 +60,7 @@ func main() {
 	println("")
 	println("--------------------------------------------------")
 	println("Use this link to join the meeting in your browser:")
-	println(bbb_web.GenerateJoinUrl(meetingId, "Student 0089", "true", false))
+	println(bbb_web.GenerateJoinUrl(meetingId, "Student 00089", "true", false))
 	println("--------------------------------------------------")
 	println("")
 
