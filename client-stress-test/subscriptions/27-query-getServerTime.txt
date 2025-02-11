@@ -1,0 +1,1 @@
+{"id":"c78e77c4-dd00-47eb-92fe-75d828c31cb0","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getServerTime","query":"query getServerTime {\n  current_time {\n    currentTimestamp\n    __typename\n  }\n}"}}

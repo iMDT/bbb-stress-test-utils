@@ -1,0 +1,1 @@
+{"id":"a1730afd-7bcf-48f7-938c-c860fded106b","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"unreadChatsSubscription","query":"subscription unreadChatsSubscription {\n  chat(where: {totalUnread: {_gt: 0}, visible: {_eq: true}}) {\n    chatId\n    totalUnread\n    participant {\n      name\n      __typename\n    }\n    __typename\n  }\n}"}}

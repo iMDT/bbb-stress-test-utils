@@ -1,0 +1,1 @@
+{"id":"705b43a0-da29-4b70-92d9-ca5e56ed5b28","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getIsUserCurrentlyInBreakoutRoom","query":"subscription getIsUserCurrentlyInBreakoutRoom {\n  breakoutRoom_aggregate(where: {isUserCurrentlyInRoom: {_eq: true}}) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}
