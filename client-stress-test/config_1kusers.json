@@ -1,7 +1,7 @@
 {
   "app_name": "BBB Client Stress test",
   "logLevel": "INFO",
-  "securitySalt": "1YghBeIDG6b6Go78iXz1ucWiZuE7sBRnmYctTDzk8",
+  "securitySalt": "O8r0YbZdw1bp03DSH33vqje9oPRv4kzqOhX8ghVgZdg",
   "bbbUrl": "https://bbb30.bbb.imdt.dev/bigbluebutton/api",
   "bbbDockerContainerName": "bbb30",
   "hasuraWs": "wss://bbb30.bbb.imdt.dev/graphql",

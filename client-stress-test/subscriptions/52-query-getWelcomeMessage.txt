@@ -1,1 +1,0 @@
-{"id":"61f25979-3747-4411-93d1-59f76af95f26","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getWelcomeMessage","query":"query getWelcomeMessage {\n  user_welcomeMsgs {\n    welcomeMsg\n    welcomeMsgForModerators\n    __typename\n  }\n}"}}

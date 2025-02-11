@@ -1,1 +1,0 @@
-{"id":"d92a6510-4da2-4747-8535-0d0218e1545b","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getIsBreakout","query":"subscription getIsBreakout {\n  meeting {\n    meetingId\n    isBreakout\n    __typename\n  }\n}"}}

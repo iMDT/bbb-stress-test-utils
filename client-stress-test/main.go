@@ -60,7 +60,7 @@ func main() {
 	println("")
 	println("--------------------------------------------------")
 	println("Use this link to join the meeting in your browser:")
-	println(bbb_web.GenerateJoinUrl(meetingId, "Teacher", "true", true))
+	println(bbb_web.GenerateJoinUrl(meetingId, "Student 0089", "true", false))
 	println("--------------------------------------------------")
 	println("")
 
@@ -70,14 +70,14 @@ func main() {
 
 	log.Infof("It will add %d users to the meeting.", config.NumOfUsers)
 
-	time.Sleep(time.Duration(config.DelayFirstUserJoinInSecs) * time.Second)
-
-	startedAt := time.Now()
-
 	//Start benchmarking client
 	if config.BenchmarkingEnabled {
 		go benchmarking(meetingId)
 	}
+
+	time.Sleep(time.Duration(config.DelayFirstUserJoinInSecs) * time.Second)
+
+	startedAt := time.Now()
 
 	var users []string
 
@@ -107,6 +107,9 @@ func main() {
 
 	exit := false
 	for !exit {
+
+		log.Infof("Current number of joined users::::: %d\n", common.GetNumOfJoinedUsers())
+
 		if common.GetNumOfJoinedUsers() >= config.NumOfUsers {
 			log.Infof("%d users joined! Exiting...\n", common.GetNumOfJoinedUsers())
 			exit = true
@@ -119,6 +122,8 @@ func main() {
 		//Wait a benchmark user
 		if config.BenchmarkingEnabled {
 			time.Sleep(time.Duration(4) * time.Second)
+		} else {
+			time.Sleep(time.Duration(1) * time.Second)
 		}
 
 		if time.Since(timeRunning).Seconds() > float64(config.Timeout) {
@@ -225,19 +230,20 @@ func addNewUser(meetingId string, name string, benchmarking bool) {
 	if config.Method == "graphql" {
 
 		user := common.User{
-			UserId:          userId,
-			SessionToken:    sessionToken,
-			AuthToken:       authToken,
-			Name:            name,
-			ApiCookie:       apiCookie,
-			ConnAckReceived: false,
-			Joined:          false,
-			Pong:            false,
-			Chat:            false,
-			CurrMessageId:   1,
-			TimeToLive:      config.UserTimeToLive,
-			Logger:          log.WithField("user", name),
-			Benchmarking:    benchmarking,
+			UserId:             userId,
+			SessionToken:       sessionToken,
+			AuthToken:          authToken,
+			Name:               name,
+			ApiCookie:          apiCookie,
+			WsConnectionClosed: true,
+			ConnAckReceived:    false,
+			Joined:             false,
+			Pong:               false,
+			Chat:               false,
+			CurrMessageId:      1,
+			TimeToLive:         config.UserTimeToLive,
+			Logger:             log.WithField("user", name),
+			Benchmarking:       benchmarking,
 			//BenchmarkingLogger: benchmarkingLogger,
 			BenchmarkingMetrics: make(map[string]interface{}),
 			//BenchmarkingCsvWriter: benchmarkingCsvWriter,

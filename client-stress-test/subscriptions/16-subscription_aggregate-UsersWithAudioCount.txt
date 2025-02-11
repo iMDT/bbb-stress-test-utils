@@ -1,1 +1,0 @@
-{"id":"d756fa4f-42d6-4e67-81ed-114229bb41bf","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"UsersWithAudioCount","query":"subscription UsersWithAudioCount {\n  user_aggregate(where: {voice: {joined: {_eq: true}}}) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

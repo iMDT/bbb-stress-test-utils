@@ -17,13 +17,16 @@ type User struct {
 	ApiCookie                     []*http.Cookie
 	WsConnection                  *websocket.Conn
 	WsConnectionMutex             sync.Mutex
+	WsConnectionClosed            bool
 	ConnAckReceived               bool
 	UserJoinMutationId            int
 	UserCurrentSubscriptionId     int
 	ConnectionAliveMutationId     int
 	ChatMessageMutationId         int
 	PeriodicChatMessageMutationId int
+	PeriodicChatMessageSentAt     time.Time
 	PeriodicChatMessageCounter    int
+	PeriodicChatMessageRtts       []int64
 	Joined                        bool
 	Pong                          bool
 	Chat                          bool

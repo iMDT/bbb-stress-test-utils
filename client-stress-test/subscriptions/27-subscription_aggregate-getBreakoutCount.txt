@@ -1,1 +1,0 @@
-{"id":"5a7d9e2f-5ebb-401d-bd9a-d9d0ab244018","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getBreakoutCount","query":"subscription getBreakoutCount {\n  breakoutRoom_aggregate(where: {showInvitation: {_eq: true}}) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

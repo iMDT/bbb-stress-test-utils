@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"io/ioutil"
 	"math/rand"
@@ -66,7 +67,10 @@ func StartUser(user *common.User) {
 		//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Connection established:")
 	}
 
-	defer user.WsConnection.Close()
+	defer func() {
+		user.WsConnectionClosed = true
+		user.WsConnection.Close()
+	}()
 
 	go func() {
 		for {
@@ -102,10 +106,10 @@ func StartUser(user *common.User) {
 		}
 	}()
 
-	if user.Benchmarking {
+	if user.Benchmarking && user.Name == "Benchmarking 01" {
 		go func() {
 			for {
-				time.Sleep(5 * time.Second)
+				time.Sleep(1 * time.Second)
 				SendPeriodicChatMessage(user, GetCurrMessageId(user))
 			}
 		}()
@@ -114,16 +118,21 @@ func StartUser(user *common.User) {
 	go handleWsMessages(user)
 	SendConnectionInitMessage(user)
 
-	//if user.Benchmarking {
-	//	for {
-	//		if user.Joined && user.Pong && user.Chat {
-	//			break
-	//		}
-	//		time.Sleep(1 * time.Second)
-	//	}
-	//} else {
-	time.Sleep(time.Duration(user.TimeToLive) * time.Second)
-	//}
+	if user.Benchmarking {
+		if user.Benchmarking && user.Name == "Benchmarking 01" {
+			//wait because he is sending periodic msgs
+			time.Sleep(999 * time.Second)
+		}
+
+		for {
+			if user.Joined && user.Pong && user.Chat {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	} else {
+		time.Sleep(time.Duration(user.TimeToLive) * time.Second)
+	}
 
 }
 
@@ -299,9 +308,22 @@ func handleWsMessages(user *common.User) {
 
 				//check if it is the message I sent
 				if bytes.Contains(message, []byte("MY MSG "+strconv.Itoa(user.PeriodicChatMessageCounter))) {
-					//log.Info("Received chat message, sending last seen mutation")
-					user.Logger.Info(string(message))
-					user.PeriodicChatMessageMutationId = 0
+
+					if bytes.Contains(message, []byte(user.UserId)) {
+						user.PeriodicChatMessageRtts = append(user.PeriodicChatMessageRtts, time.Since(user.PeriodicChatMessageSentAt).Milliseconds())
+						log.Infof("Received MY MSG, it took: %v milliseconds.\n", time.Since(user.PeriodicChatMessageSentAt).Milliseconds())
+						//AVERAGE
+						var sumOfRtts int64
+						for i := range user.PeriodicChatMessageRtts {
+							sumOfRtts += user.PeriodicChatMessageRtts[i]
+						}
+						log.Infof("Current chat message rtt average: %v milliseconds.\nPeriodic rtts:%v\n", float64(sumOfRtts)/float64(len(user.PeriodicChatMessageRtts)), user.PeriodicChatMessageRtts)
+
+						//user.Logger.Info("Received chat message")
+						//user.Logger.Info(string(message))
+						user.PeriodicChatMessageMutationId = 0
+
+					}
 				}
 			}
 
@@ -358,6 +380,7 @@ func EstablishWsConnection(user *common.User) bool {
 	defer user.WsConnectionMutex.Unlock()
 
 	if user.WsConnection != nil {
+		user.WsConnectionClosed = true
 		user.WsConnection.Close()
 	}
 
@@ -370,6 +393,7 @@ func EstablishWsConnection(user *common.User) bool {
 		return false
 	}
 	user.WsConnection = wsConn
+	user.WsConnectionClosed = false
 
 	return true
 }
@@ -475,6 +499,11 @@ func SendGenericGraphqlMessage(user *common.User, messageId int, variables map[s
 }
 
 func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, messageId int, chatMessage string) {
+	if user.WsConnectionClosed {
+		user.Logger.Debugf("Skipping groupChatMessage %d because the connection is closed.", user.ConnectionAliveMutationId)
+		return
+	}
+
 	//Send Typing
 
 	if user.Benchmarking {
@@ -530,12 +559,25 @@ func SendUpdateConnectionAliveAtBenchmarking(user *common.User) {
 }
 
 func SendUpdateConnectionAliveAt(user *common.User, messageId int) {
+	if user.WsConnectionClosed {
+		user.Logger.Debugf("Skipping alive %d because the connection is closed.", user.ConnectionAliveMutationId)
+		return
+	}
+
+	//{"id":"f84a9a3f-2315-418e-a5b3-a13bf5e689f0","payload":{"data":{"userSetConnectionAlive":true}},"type":"next"}
+	//{"id":"cdc84bf1-ef6b-492d-9325-7a61a2b0eca3",
+	//"type":"subscribe","payload":
+	//{"variables":{"networkRttInMs":9},
+	//"extensions":{},"operationName":"UpdateConnectionAliveAt","query":
+	//"mutation UpdateConnectionAliveAt($networkRttInMs: Float!) {\n
+	//userSetConnectionAlive(networkRttInMs: $networkRttInMs)\n}"}}
+
 	//Send Message
 	SendGenericGraphqlMessage(
 		user,
 		messageId,
 		map[string]interface{}{
-			"networkRttInMs": 5.300000000745058,
+			"networkRttInMs": 5,
 		},
 		"UpdateConnectionAliveAt",
 		`mutation UpdateConnectionAliveAt($networkRttInMs: Float!) { 
@@ -548,6 +590,7 @@ func SendPeriodicChatMessage(user *common.User, messageId int) {
 	//wait it returned to send the next
 	if user.PeriodicChatMessageMutationId == 0 {
 		user.PeriodicChatMessageMutationId = GetCurrMessageId(user)
+		user.PeriodicChatMessageSentAt = time.Now()
 		user.PeriodicChatMessageCounter++
 		msgText := "MY MSG " + strconv.Itoa(user.PeriodicChatMessageCounter)
 		go SendSendGroupChatMessageMsg(user, 0, user.PeriodicChatMessageMutationId, msgText)
@@ -556,6 +599,11 @@ func SendPeriodicChatMessage(user *common.User, messageId int) {
 }
 
 func SendUpdateChatLastSeenAt(user *common.User) {
+	if user.WsConnectionClosed {
+		user.Logger.Debugf("Skipping chatLasSeen %d because the connection is closed.", user.ConnectionAliveMutationId)
+		return
+	}
+
 	now := time.Now()
 
 	SendGenericGraphqlMessage(
@@ -566,12 +614,12 @@ func SendUpdateChatLastSeenAt(user *common.User) {
 			"lastSeenAt": now.Format("2006-01-02T15:04:05.999Z"),
 		},
 		"UpdateChatUser",
-		`mutation UpdateChatUser($chatId: String, $lastSeenAt: timestamptz) { 
-					update_chat_user(where: {chatId: {_eq: $chatId}, _or: [{lastSeenAt: {_lt: $lastSeenAt}}, {lastSeenAt: {_is_null: true}}]}
-						_set: {lastSeenAt: $lastSeenAt}
-					)
-					{ affected_rows    __typename  }
-				}
+		`mutation UpdateChatLastSeen($chatId: String, $lastSeenAt: String) {
+				chatSetLastSeen(
+				  chatId: $chatId
+				  lastSeenAt: $lastSeenAt
+				)
+			  }
 	`)
 }
 

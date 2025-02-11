@@ -1,1 +1,0 @@
-{"id":"7246e87c-9a6c-4e1b-865d-632888a9ec07","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getCustomParameter","query":"query getCustomParameter {\n  user_customParameter {\n    parameter\n    value\n    __typename\n  }\n}"}}

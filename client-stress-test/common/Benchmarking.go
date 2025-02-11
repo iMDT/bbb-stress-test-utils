@@ -99,6 +99,13 @@ func ExportCsv(fileName string) {
 }
 
 func DrawPlot(fileName string) {
+	if len(users) == 0 {
+		fmt.Printf("No benchmark users found to generate a chart.\n")
+		return
+	}
+
+	fmt.Printf("Generation chart for %d users.\n", len(users))
+
 	//Sort users
 	sort.Slice(users, func(i, j int) bool {
 		return users[i].Name < users[j].Name
@@ -133,7 +140,6 @@ func DrawPlot(fileName string) {
 			} else {
 				metricTimeValues = append(metricTimeValues, 0)
 			}
-
 		}
 
 		metricTimes := plotter.Values(metricTimeValues)
@@ -194,7 +200,7 @@ func DrawPlot(fileName string) {
 
 	p.Y.Label.Text = "Elapsed time (ms)"
 	p.Y.Min = 0
-	p.Y.Max = 20000
+	p.Y.Max = 50000
 	p.Y.Tick.Marker = commaTicks{}
 	//p.Y.Tick.Marker = plot.DefaultTicks{} // Use default ticks for left Y-axis
 	//rightAxis := plotter.NewYAxis("Right Y-axis")

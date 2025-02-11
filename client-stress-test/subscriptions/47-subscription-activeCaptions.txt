@@ -1,1 +1,0 @@
-{"id":"54a2230d-2c1c-4a7f-b130-c8f08058e5e7","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"activeCaptions","query":"subscription activeCaptions {\n  caption_activeLocales {\n    locale\n    __typename\n  }\n}"}}

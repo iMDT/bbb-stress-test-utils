@@ -79,6 +79,8 @@ func GenerateJoinUrl(meetingId string, name string, redirect string, moderator b
 		params = "fullName=" + name + "&meetingID=" + meetingId + "&password=ap&redirect=" + redirect
 	}
 
+	params = params + "&userdata-bbb_client_title=" + name
+
 	return common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
 }
 
