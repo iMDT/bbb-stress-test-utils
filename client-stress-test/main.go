@@ -95,11 +95,11 @@ func main() {
 
 	for _, name := range users {
 		go addNewUser(meetingId, name, false)
+		delayBetweenJoins := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MaxIntervalBetweenUserJoinInMs
+		time.Sleep(time.Duration(delayBetweenJoins) * time.Millisecond)
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	delayBetweenJoins := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MaxIntervalBetweenUserJoinInMs
-	time.Sleep(time.Duration(delayBetweenJoins) * time.Millisecond)
 
 	//log.Infof("Waiting to finish....")
 
