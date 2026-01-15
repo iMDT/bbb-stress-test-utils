@@ -1,14 +1,16 @@
 package bbb_web
 
 import (
-	"bbb-stress-test/common"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"bbb-stress-test/common"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type CreateResponse struct {
@@ -29,9 +31,9 @@ func RequestApiCreate(client *http.Client) string {
 
 	createUrl := common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
 
-	//https://bbb30.bbb.imdt.dev/bigbluebutton/api/create?allowStartStopRecording=true&attendeePW=ap&autoStartRecording=false&meetingID=random-7594033&moderatorPW=mp&name=meeting+test&record=false&voiceBridge=79995&welcome=%3Cbr%3EWelcome+to+%3Cb%3E%25%25CONFNAME%25%25%3C%2Fb%3E%21&checksum=b36c0b51b1408ec4948244a22d2e2c805209b729
+	// https://bbb30.bbb.imdt.dev/bigbluebutton/api/create?allowStartStopRecording=true&attendeePW=ap&autoStartRecording=false&meetingID=random-7594033&moderatorPW=mp&name=meeting+test&record=false&voiceBridge=79995&welcome=%3Cbr%3EWelcome+to+%3Cb%3E%25%25CONFNAME%25%25%3C%2Fb%3E%21&checksum=b36c0b51b1408ec4948244a22d2e2c805209b729
 
-	//log.Info(createUrl)
+	// log.Info(createUrl)
 
 	respCreate, err := client.Get(createUrl)
 	if err != nil {
@@ -85,7 +87,7 @@ func GenerateJoinUrl(meetingId string, name string, redirect string, moderator b
 }
 
 func RequestApiJoin(client *http.Client, meetingId string, name string) (string, string, string, []*http.Cookie) {
-	//log := log.WithField("_routine", "bbb_web_client")
+	// log := log.WithField("_routine", "bbb_web_client")
 
 	respJoin, err := client.Get(GenerateJoinUrl(meetingId, name, "false", false))
 	if err != nil {

@@ -1,1 +1,0 @@
-{"id":"8a8dae75-7834-44fa-841e-7cbf6c1be99a","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"PluginConfigurationQuery","query":"query PluginConfigurationQuery {\n  plugin {\n    name\n    javascriptEntrypointUrl\n    javascriptEntrypointIntegrity\n    __typename\n  }\n}"}}

@@ -1,12 +1,8 @@
 package main
 
 import (
-	"bbb-stress-test/akka_apps"
-	"bbb-stress-test/bbb_web"
-	"bbb-stress-test/common"
-	"bbb-stress-test/hasura"
+	"flag"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
@@ -15,29 +11,57 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"bbb-stress-test/akka_apps"
+	"bbb-stress-test/bbb_web"
+	"bbb-stress-test/common"
+	"bbb-stress-test/hasura"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var currNumOfMsgs int64 = 1
 
 func main() {
+	// Define command-line flags
+	configFile := flag.String("config", "", "Path to configuration file (e.g., config.json, config_1kusers.json)")
+	meetingIdFlag := flag.String("meetingId", "", "Meeting ID to join an existing meeting (skips meeting creation)")
+
+	// Custom usage function
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "BBB Stress Test Client\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nExamples:\n")
+		fmt.Fprintf(os.Stderr, "  %s --config=config.json\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s --config=config.json --meetingId=abc123def456\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s --meetingId=abc123def456\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	// Parse flags
+	flag.Parse()
+
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Jar: jar,
 	}
 
-	if len(os.Args) > 1 {
-		fmt.Printf("config name: %s\n", os.Args[1])
-		common.SetConfigFile(os.Args[1])
+	// Set config file if provided
+	if *configFile != "" {
+		fmt.Printf("config name: %s\n", *configFile)
+		common.SetConfigFile(*configFile)
 	}
 
 	config := common.GetConfig()
 
-	//logrus := logrus.New()
-	//logger := logrus.NewEntry(logrus.New())
+	// logrus := logrus.New()
+	// logger := logrus.NewEntry(logrus.New())
 
 	logLevelFromConfig, _ := log.ParseLevel(config.LogLevel)
 	log.SetLevel(logLevelFromConfig)
-	//log.SetFormatter(&log.JSONFormatter{})
+	// log.SetFormatter(&log.JSONFormatter{})
 
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: time.RFC3339Nano,
@@ -53,13 +77,25 @@ func main() {
 
 	log := log.WithField("_routine", "main")
 
-	meetingId := bbb_web.RequestApiCreate(client)
+	var meetingId string
 
-	println("Meeting id: ", meetingId)
+	// Use provided meeting ID or create a new meeting
+	if *meetingIdFlag != "" {
+		meetingId = *meetingIdFlag
+		println("Using provided meeting ID: ", meetingId)
+	} else {
+		meetingId = bbb_web.RequestApiCreate(client)
+		println("Meeting id: ", meetingId)
+	}
 
 	println("")
 	println("--------------------------------------------------")
 	println("Use this link to join the meeting in your browser:")
+	println("")
+	println("MODERATOR:")
+	println(bbb_web.GenerateJoinUrl(meetingId, "Teacher", "true", true))
+	println("")
+	println("STUDENT:")
 	println(bbb_web.GenerateJoinUrl(meetingId, "Student 00089", "true", false))
 	println("--------------------------------------------------")
 	println("")
@@ -70,7 +106,7 @@ func main() {
 
 	log.Infof("It will add %d users to the meeting.", config.NumOfUsers)
 
-	//Start benchmarking client
+	// Start benchmarking client
 	if config.BenchmarkingEnabled {
 		go benchmarking(meetingId)
 	}
@@ -101,7 +137,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	//log.Infof("Waiting to finish....")
+	// log.Infof("Waiting to finish....")
 
 	timeRunning := time.Now()
 
@@ -119,7 +155,7 @@ func main() {
 			time.Sleep(time.Duration(config.DelayToFinishTestSecs) * time.Second)
 		}
 
-		//Wait a benchmark user
+		// Wait a benchmark user
 		if config.BenchmarkingEnabled {
 			time.Sleep(time.Duration(4) * time.Second)
 		} else {
@@ -141,22 +177,21 @@ func main() {
 }
 
 func benchmarking(meetingId string) {
-
 	//file, err := os.OpenFile("benchmarking.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	//if err != nil {
 	//	log.Fatal("Erro ao abrir arquivo de log:", err)
 	//}
 	//defer file.Close()
 
-	//file, err := os.OpenFile("example.txt", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	// file, err := os.OpenFile("example.txt", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 
-	fileJson, err := os.OpenFile("benchmarking.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	fileJson, err := os.OpenFile("benchmarking.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
 	if err != nil {
 		log.Fatal("Error opening file:", err)
 	}
 	defer fileJson.Close()
 
-	//file, _ := os.Create("benchmarking_" + meetingId + ".csv")
+	// file, _ := os.Create("benchmarking_" + meetingId + ".csv")
 
 	//
 	//logEspecial := log.New()
@@ -189,10 +224,10 @@ func benchmarking(meetingId string) {
 		//// Print some of the memory usage statistics
 		//log.Infof("Memory Total: %v, Free: %v, UsedPercent: %.2f%%\n", vmStat.Total, vmStat.Free, vmStat.UsedPercent)
 
-		//logEspecial.Info("It will add a new user-----------------")
-		//logEspecial.Info("Users clients: ", common.GetNumOfUsers())
-		//logEspecial.Info("Users connected: ", common.GetNumOfConnectedUsers())
-		//logEspecial.Info("Users joined: ", common.GetNumOfJoinedUsers())
+		// logEspecial.Info("It will add a new user-----------------")
+		// logEspecial.Info("Users clients: ", common.GetNumOfUsers())
+		// logEspecial.Info("Users connected: ", common.GetNumOfConnectedUsers())
+		// logEspecial.Info("Users joined: ", common.GetNumOfJoinedUsers())
 
 		go addNewUser(meetingId, fmt.Sprintf("Benchmarking %02d", benchmarkingCurrUser), true)
 		benchmarkingCurrUser++
@@ -206,7 +241,6 @@ func benchmarking(meetingId string) {
 }
 
 func addNewUser(meetingId string, name string, benchmarking bool) {
-
 	jar, _ := cookiejar.New(nil)
 	newClient := &http.Client{
 		Jar: jar,
@@ -225,7 +259,7 @@ func addNewUser(meetingId string, name string, benchmarking bool) {
 		return
 	}
 
-	var config = common.GetConfig()
+	config := common.GetConfig()
 
 	if config.Method == "graphql" {
 
@@ -244,9 +278,9 @@ func addNewUser(meetingId string, name string, benchmarking bool) {
 			TimeToLive:         config.UserTimeToLive,
 			Logger:             log.WithField("user", name),
 			Benchmarking:       benchmarking,
-			//BenchmarkingLogger: benchmarkingLogger,
+			// BenchmarkingLogger: benchmarkingLogger,
 			BenchmarkingMetrics: make(map[string]interface{}),
-			//BenchmarkingCsvWriter: benchmarkingCsvWriter,
+			// BenchmarkingCsvWriter: benchmarkingCsvWriter,
 			Problem: false,
 		}
 
@@ -260,7 +294,7 @@ func addNewUser(meetingId string, name string, benchmarking bool) {
 			}
 
 			// Convert the output to a string and print it
-			//log.Info(string(output))
+			// log.Info(string(output))
 
 			cpuUsage := string(output)
 			cpuUsage = strings.Trim(cpuUsage, "\n")
@@ -303,5 +337,4 @@ func addNewUser(meetingId string, name string, benchmarking bool) {
 			}
 		}
 	}
-
 }

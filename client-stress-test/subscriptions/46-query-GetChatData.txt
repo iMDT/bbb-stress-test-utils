@@ -1,1 +1,0 @@
-{"id":"3e46e043-5fbd-4436-acb3-a72312efe8a9","type":"subscribe","payload":{"variables":{"chatId":"MAIN-PUBLIC-GROUP-CHAT"},"extensions":{},"operationName":"GetChatData","query":"query GetChatData($chatId: String!) {\n  chat(where: {chatId: {_eq: $chatId}}) {\n    chatId\n    public\n    participant {\n      name\n      __typename\n    }\n    __typename\n  }\n}"}}

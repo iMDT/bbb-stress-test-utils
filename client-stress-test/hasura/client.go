@@ -1,25 +1,32 @@
 package hasura
 
 import (
-	"bbb-stress-test/common"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/cookiejar"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"bbb-stress-test/common"
+
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
+func init() {
+	ReadSubscriptions()
+}
+
 func StartUser(user *common.User) {
-	//user.Logger.Info("Initializing user!")
+	// user.Logger.Info("Initializing user!")
 	defer user.Logger.Info("User is leaving!")
 
 	user.CreatedTime = time.Now()
@@ -28,23 +35,23 @@ func StartUser(user *common.User) {
 		user.BenchmarkingMetrics["name"] = user.Name
 		user.BenchmarkingMetrics["created_time"] = user.CreatedTime
 
-		//user.BenchmarkingLogger.Info("Initializing user! Total of users:", common.GetNumOfUsers())
-		//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Initializing user!")
-		//defer user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("User is leaving!")
+		// user.BenchmarkingLogger.Info("Initializing user! Total of users:", common.GetNumOfUsers())
+		// user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Initializing user!")
+		// defer user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("User is leaving!")
 		defer func() {
-			//user.Logger.Info("It will write the csv!")
+			// user.Logger.Info("It will write the csv!")
 			user.BenchmarkingMetrics["left"] = time.Since(user.CreatedTime)
 			user.BenchmarkingMetrics["left_time"] = time.Now()
 
-			//if dataAsJson, err := json.Marshal(user.BenchmarkingMetrics); err == nil {
-			//dataAsJson = append(dataAsJson, '\n')
+			// if dataAsJson, err := json.Marshal(user.BenchmarkingMetrics); err == nil {
+			// dataAsJson = append(dataAsJson, '\n')
 
-			//file, _ := os.Create("benchmarking.csv")
-			//writer := csv.NewWriter(file)
-			//defer writer.Flush()
+			// file, _ := os.Create("benchmarking.csv")
+			// writer := csv.NewWriter(file)
+			// defer writer.Flush()
 
 			common.AddBenckmarkingUser(user)
-			//common.WriteToCsv(user)
+			// common.WriteToCsv(user)
 
 			//if _, err := user.BenchmarkingJsonFile.Write(dataAsJson); err != nil {
 			//	user.Logger.Fatal(err)
@@ -52,6 +59,56 @@ func StartUser(user *common.User) {
 			//}
 		}()
 	}
+
+	// https: // bbb30.bbb.imdt.dev/bigbluebutton/api
+
+	// https: // bbb30.bbb.imdt.dev/api/rest/meetingStaticData
+
+	// Simulate client requests
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{Jar: jar}
+
+	RequestUrlWithCookies(client, user, common.GetApiUrl())
+	restUrl := strings.ReplaceAll(common.GetApiUrl(), "/bigbluebutton/api", "/api/rest")
+	RequestUrlWithCookies(client, user, restUrl+"/meetingStaticData")
+	RequestUrlWithCookies(client, user, restUrl+"/userMetadata")
+
+	// jar, _ := cookiejar.New(nil)
+	// newClient := &http.Client{
+	// 	Jar: jar,
+	// }
+
+	// // header := http.Header{}
+	// // header.Add("Cookie", common.GetCookieJSESSIONID(user.ApiCookie))
+
+	// fmt.Println("Meu cookie eh :" + common.GetCookieJSESSIONID(user.ApiCookie))
+	// cookieHeader := strings.Split(common.GetCookieJSESSIONID(user.ApiCookie), ";")[0]
+	// fmt.Println("Meu cookie eh :" + cookieHeader)
+
+	// // cria a request e injeta o header
+	// // req, err := http.NewRequest("GET", "http://127.0.0.1:8090/bigbluebutton/connection/checkGraphqlAuthorization", nil)
+	// req, err := http.NewRequest("GET", "https://bbb30.bbb.imdt.dev/api/rest/meetingStaticData", nil)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// // req.Header = header
+	// req.Header.Add("Cookie", cookieHeader)
+	// req.Header.Add("x-session-token", cookieHeader)
+
+	// resp, err := newClient.Do(req)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer resp.Body.Close()
+
+	// // ler body se quiser
+	// body, _ := io.ReadAll(resp.Body)
+	// fmt.Println(string(body))
+
+	// token=t.mqiGKXJAZjw4MxWEX2EZ; language=en; prefs={%22showLineNumbers%22:false%2C%22noColors%22:true}; _ga=GA1.2.2064765318.1754680338; _gid=GA1.2.970251287.1758545151; sessionID=s.8d34651cbb4e0cd41dfe2fdafdff8dc8; _ga_KXLWLVELHN=GS2.2.s1758977977$o101$g0$t1758977977$j60$l0$h0; JSESSIONID=3CD7C0A3D0A06A6ED61782301289431C
+
+	// https: // bbb30.bbb.imdt.dev/api/rest/userMetadata
+	// token=t.mqiGKXJAZjw4MxWEX2EZ; language=en; prefs={%22showLineNumbers%22:false%2C%22noColors%22:true}; _ga=GA1.2.2064765318.1754680338; _gid=GA1.2.970251287.1758545151; sessionID=s.8d34651cbb4e0cd41dfe2fdafdff8dc8; _ga_KXLWLVELHN=GS2.2.s1758977977$o101$g0$t1758977977$j60$l0$h0; JSESSIONID=3CD7C0A3D0A06A6ED61782301289431C
 
 	for !EstablishWsConnection(user) {
 		time.Sleep(5 * time.Second)
@@ -64,7 +121,7 @@ func StartUser(user *common.User) {
 
 	if user.Benchmarking {
 		user.BenchmarkingMetrics["connection_established"] = time.Since(user.CreatedTime)
-		//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Connection established:")
+		// user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Connection established:")
 	}
 
 	defer func() {
@@ -120,7 +177,7 @@ func StartUser(user *common.User) {
 
 	if user.Benchmarking {
 		if user.Benchmarking && user.Name == "Benchmarking 01" {
-			//wait because he is sending periodic msgs
+			// wait because he is sending periodic msgs
 			time.Sleep(999 * time.Second)
 		}
 
@@ -133,7 +190,6 @@ func StartUser(user *common.User) {
 	} else {
 		time.Sleep(time.Duration(user.TimeToLive) * time.Second)
 	}
-
 }
 
 func handleWsMessages(user *common.User) {
@@ -187,7 +243,7 @@ func handleWsMessages(user *common.User) {
 				if user.Benchmarking {
 					user.Logger.Info("Received connection_ack")
 					user.BenchmarkingMetrics["connection_ack_received"] = time.Since(user.CreatedTime)
-					//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Received connection_ack:")
+					// user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Received connection_ack:")
 				}
 
 				user.ConnAckReceived = true
@@ -209,12 +265,12 @@ func handleWsMessages(user *common.User) {
 			if user.UserJoinMutationId == 0 {
 				if user.Benchmarking {
 					user.BenchmarkingMetrics["join_start"] = time.Since(user.CreatedTime)
-					//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Will send Join Message:")
+					// user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Will send Join Message:")
 				}
 				SendJoinMessage(user)
 				if user.Benchmarking {
 					user.BenchmarkingMetrics["join_sent"] = time.Since(user.CreatedTime)
-					//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Sent Join Message:")
+					// user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Sent Join Message:")
 				}
 			}
 
@@ -227,7 +283,7 @@ func handleWsMessages(user *common.User) {
 					go SendSendGroupChatMessageMsg(user, 0, user.ChatMessageMutationId, "I'm here "+user.Name)
 				}
 				user.Pong = true
-				//user.Logger.Infoln("Ping successfully.")
+				// user.Logger.Infoln("Ping successfully.")
 
 			}
 
@@ -235,6 +291,8 @@ func handleWsMessages(user *common.User) {
 				if user.Benchmarking {
 					user.BenchmarkingMetrics["user_current_data_received"] = time.Since(user.CreatedTime)
 				}
+
+				user.Logger.Println("Received user_current data")
 
 				var hasuraMessage HasuraMessage
 				err = json.Unmarshal(message, &hasuraMessage)
@@ -249,19 +307,18 @@ func handleWsMessages(user *common.User) {
 					panic(err)
 				}
 
-				//currentDataProp := "user_current"
-				//payloadDataAsMap := messagePayloadData.([]interface{})
-
 				if len(messagePayloadData) > 0 {
 					firstItemOfMessage := messagePayloadData[0]
 					if firstItemOfMessageAsMap, currDataOk := firstItemOfMessage.(map[string]interface{}); currDataOk {
+						payloadAsJsonByte, _ := json.Marshal(firstItemOfMessageAsMap)
+						user.Logger.Debug(string(payloadAsJsonByte))
 						if joinedValue, okJoinedValue := firstItemOfMessageAsMap["joined"].(bool); okJoinedValue {
-							//user.Logger.Infof("Joined: %t", joinedValue)
+							// user.Logger.Infof("Joined: %t", joinedValue)
 
 							if joinedValue && !user.Joined {
 								if user.Benchmarking {
 									user.BenchmarkingMetrics["join_received"] = time.Since(user.CreatedTime)
-									//user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Joined:")
+									// user.BenchmarkingLogger.WithField("1timeSince", fmt.Sprintf("%s", time.Since(user.CreatedTime))).Info("Joined:")
 								}
 
 								user.Logger.Infoln("Joined successfully.")
@@ -276,7 +333,7 @@ func handleWsMessages(user *common.User) {
 									SendUpdateConnectionAliveAtBenchmarking(user)
 								}
 
-								//Wait for re-connection
+								// Wait for re-connection
 								time.Sleep(2 * time.Second)
 
 								//for i := 0; i < 25; i++ {
@@ -287,7 +344,7 @@ func handleWsMessages(user *common.User) {
 								SendSubscriptionsBatch(user)
 
 								if !user.Benchmarking {
-									//SendSubscriptionsBatch(user)
+									// SendSubscriptionsBatch(user)
 									SendChatMessages(user)
 								}
 							}
@@ -302,34 +359,33 @@ func handleWsMessages(user *common.User) {
 			//	return
 			//}
 
-			//fmt.Println(string(payloadAsJsonByte))
+			// fmt.Println(string(payloadAsJsonByte))
 			if bytes.Contains(message, []byte("chat_message_public")) {
 				SendUpdateChatLastSeenAt(user)
 
-				//check if it is the message I sent
+				// check if it is the message I sent
 				if bytes.Contains(message, []byte("MY MSG "+strconv.Itoa(user.PeriodicChatMessageCounter))) {
-
 					if bytes.Contains(message, []byte(user.UserId)) {
 						user.PeriodicChatMessageRtts = append(user.PeriodicChatMessageRtts, time.Since(user.PeriodicChatMessageSentAt).Milliseconds())
 						log.Infof("Received MY MSG, it took: %v milliseconds.\n", time.Since(user.PeriodicChatMessageSentAt).Milliseconds())
-						//AVERAGE
+						// AVERAGE
 						var sumOfRtts int64
 						for i := range user.PeriodicChatMessageRtts {
 							sumOfRtts += user.PeriodicChatMessageRtts[i]
 						}
 						log.Infof("Current chat message rtt average: %v milliseconds.\nPeriodic rtts:%v\n", float64(sumOfRtts)/float64(len(user.PeriodicChatMessageRtts)), user.PeriodicChatMessageRtts)
 
-						//user.Logger.Info("Received chat message")
-						//user.Logger.Info(string(message))
+						// user.Logger.Info("Received chat message")
+						// user.Logger.Info(string(message))
 						user.PeriodicChatMessageMutationId = 0
 
 					}
 				}
 			}
 
-			//if user.UserCurrentSubscriptionId
+			// if user.UserCurrentSubscriptionId
 		case "ka":
-			//nothing
+			// nothing
 		case "complete":
 
 			if msg.Id == fmt.Sprintf("%d", user.ChatMessageMutationId) {
@@ -349,8 +405,7 @@ func handleWsMessages(user *common.User) {
 					//	user.BenchmarkingMetrics["connection_alive_completed"] = time.Since(user.CreatedTime)
 					user.Logger.Infoln("Ping successfully COMPLETE.")
 				}
-				//user.Pong = true
-
+				// user.Pong = true
 			}
 
 			if user.Benchmarking {
@@ -368,6 +423,9 @@ func handleWsMessages(user *common.User) {
 			}
 		case "error":
 			user.Logger.Errorf("recv error: %s", message)
+		case "ping":
+			// send pong
+			SendPong(user)
 		default:
 			user.Logger.Debugf("Received unknown type: %s %s", msg.Id, msg.Type)
 		}
@@ -504,7 +562,7 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 		return
 	}
 
-	//Send Typing
+	// Send Typing
 
 	if user.Benchmarking {
 		user.Logger.Infoln("Sending chat message " + chatMessage)
@@ -522,7 +580,7 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 		time.Sleep(1 * time.Second)
 	}
 
-	//Send Message
+	// Send Message
 	SendGenericGraphqlMessage(
 		user,
 		messageId,
@@ -531,11 +589,11 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 			"chatId":                      "MAIN-PUBLIC-GROUP-CHAT",
 		},
 		"ChatSendMessage",
-		`mutation ChatSendMessage($chatId: String!, $chatMessageInMarkdownFormat: String!) { 
+		`mutation ChatSendMessage($chatId: String!, $chatMessageInMarkdownFormat: String!) {
 												chatSendMessage(
 														chatId: $chatId
 														chatMessageInMarkdownFormat: $chatMessageInMarkdownFormat
-														) 
+														)
 												}`)
 
 	//
@@ -547,7 +605,6 @@ func SendSendGroupChatMessageMsg(user *common.User, typingMessageId int, message
 	//	"extensions":{},"operationName":"ChatSendMessage",
 	//		"query":"mutation ChatSendMessage($chatId: String!, $chatMessageInMarkdownFormat: String!) " +
 	//		"{\n  chatSendMessage(\n    chatId: $chatId\n    chatMessageInMarkdownFormat: $chatMessageInMarkdownFormat\n  )\n}"}}
-
 }
 
 func SendUpdateConnectionAliveAtBenchmarking(user *common.User) {
@@ -556,6 +613,43 @@ func SendUpdateConnectionAliveAtBenchmarking(user *common.User) {
 	user.Logger.Debugf("Created alive at %d", user.ConnectionAliveMutationId)
 
 	SendUpdateConnectionAliveAt(user, user.ConnectionAliveMutationId)
+}
+
+func SendPong(user *common.User) {
+	if user.WsConnectionClosed {
+		user.Logger.Debugf("Skipping pong %d because the connection is closed.", user.ConnectionAliveMutationId)
+		return
+	}
+
+	pongMessage := struct {
+		Type    string `json:"type"`
+		Payload struct {
+			Message string `json:"message"`
+		} `json:"payload"`
+	}{
+		Type: "pong",
+		Payload: struct {
+			Message string `json:"message"`
+		}{
+			Message: "keepalive",
+		},
+	}
+
+	msgBytes, err := json.Marshal(pongMessage)
+	if err != nil {
+		user.Logger.Errorf("error marshalling message: %v", err)
+		return
+	}
+
+	user.WsConnectionMutex.Lock()
+	err = user.WsConnection.WriteMessage(websocket.TextMessage, msgBytes)
+	user.WsConnectionMutex.Unlock()
+	if err != nil {
+		user.Logger.Errorln("write 2:", err)
+		user.Logger.Errorln("message was:", string(msgBytes))
+		return
+	}
+	user.Logger.Debugf("Sent pong.")
 }
 
 func SendUpdateConnectionAliveAt(user *common.User, messageId int) {
@@ -572,22 +666,32 @@ func SendUpdateConnectionAliveAt(user *common.User, messageId int) {
 	//"mutation UpdateConnectionAliveAt($networkRttInMs: Float!) {\n
 	//userSetConnectionAlive(networkRttInMs: $networkRttInMs)\n}"}}
 
-	//Send Message
+	// Send Message
 	SendGenericGraphqlMessage(
 		user,
 		messageId,
 		map[string]interface{}{
-			"networkRttInMs": 5,
+			"serverRequestId":    "abcd",
+			"clientSessionUUID":  user.UserId + "-clientuid",
+			"networkRttInMs":     5,
+			"applicationRttInMs": 0,
+			"traceLog":           "",
 		},
 		"UpdateConnectionAliveAt",
-		`mutation UpdateConnectionAliveAt($networkRttInMs: Float!) { 
-					userSetConnectionAlive(networkRttInMs: $networkRttInMs)
-				}
+		`mutation UpdateConnectionAliveAt($serverRequestId: String!, $clientSessionUUID: String!, $networkRttInMs: Float!, $applicationRttInMs: Float, $traceLog: String) {
+			userSetConnectionAlive(
+			  serverRequestId: $serverRequestId
+		      clientSessionUUID: $clientSessionUUID
+		      networkRttInMs: $networkRttInMs
+		      applicationRttInMs: $applicationRttInMs
+		      traceLog: $traceLog
+		    )
+		}
 	`)
 }
 
 func SendPeriodicChatMessage(user *common.User, messageId int) {
-	//wait it returned to send the next
+	// wait it returned to send the next
 	if user.PeriodicChatMessageMutationId == 0 {
 		user.PeriodicChatMessageMutationId = GetCurrMessageId(user)
 		user.PeriodicChatMessageSentAt = time.Now()
@@ -636,12 +740,26 @@ func SendUpdateChatLastSeenAt(user *common.User) {
 func SendUserCurrentSubscription(user *common.User) {
 	user.UserCurrentSubscriptionId = GetCurrMessageId(user)
 
-	SendGenericGraphqlMessage(
-		user,
-		user.UserCurrentSubscriptionId,
-		make(map[string]interface{}),
-		"userCurrentSubscriptionStressTest",
-		`subscription userCurrentSubscriptionStressTest { user_current { authed banned joined __typename } }`)
+	// 1aa40053-6219-4bd8-8e6d-2d092b139bed
+	patternQueryId := `"id":"[\d\w\-]+"`
+	reQueryId, errPattern := regexp.Compile(patternQueryId)
+	if errPattern != nil {
+		fmt.Println("Error compiling regex:", errPattern)
+	}
+
+	replacementQueryId := fmt.Sprintf(`"id":"%d"`, user.UserCurrentSubscriptionId)
+	userCurrentQueryWithId := reQueryId.ReplaceAllString(userCurrentSubscription, replacementQueryId)
+
+	user.Logger.Debugf("Sending %s", strings.ReplaceAll(userCurrentQueryWithId, "\n", " ")[0:60])
+	// user.Logger.Debugf("Sending %s", v)
+	// user.Logger.Infoln(v)
+	user.WsConnectionMutex.Lock()
+	err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(userCurrentQueryWithId))
+	user.WsConnectionMutex.Unlock()
+	if err != nil {
+		user.Logger.Println("write 3:", err)
+		return
+	}
 
 	common.AddSubscriptionSent()
 }
@@ -663,9 +781,47 @@ func SendJoinMessage(user *common.User) {
 			"clientIsMobile": false,
 		},
 		"UserJoin",
-		`mutation UserJoin($authToken: String!, $clientType: String!, $clientIsMobile: Boolean!) { 
+		`mutation UserJoin($authToken: String!, $clientType: String!, $clientIsMobile: Boolean!) {
 						userJoinMeeting(authToken: $authToken, clientType: $clientType, clientIsMobile: $clientIsMobile,)
 				}`)
+}
+
+var (
+	subscriptions           []string
+	userCurrentSubscription string
+)
+
+func ReadSubscriptions() {
+	dir := "./subscriptions"
+
+	numberOfSubscriptions := 0
+	// Walk the directory
+	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println("Error accessing path:", path, err)
+			return err
+		}
+
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
+			if fileContent, lastContentErr := ioutil.ReadFile(path); lastContentErr == nil && string(fileContent) != "" {
+
+				numberOfSubscriptions++
+				if strings.Contains(string(fileContent), "Patched_userCurrentSubscription") {
+					userCurrentSubscription = string(fileContent)
+					return nil
+				}
+
+				subscriptions = append(subscriptions, string(fileContent))
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		fmt.Println("Error walking through directory:", err)
+	}
+
+	fmt.Printf("%d subscriptions found.\n", numberOfSubscriptions)
 }
 
 func SendSubscriptionsBatch(user *common.User) {
@@ -675,13 +831,7 @@ func SendSubscriptionsBatch(user *common.User) {
 
 	user.Logger.Debugln("Sending Hasura subscriptions batch")
 
-	//time.Sleep(1 * time.Second)
-
-	var subscriptions []string
-
-	dir := "./subscriptions"
-
-	//1aa40053-6219-4bd8-8e6d-2d092b139bed
+	// 1aa40053-6219-4bd8-8e6d-2d092b139bed
 	patternQueryId := `"id":"[\d\w\-]+"`
 	reQueryId, errPattern := regexp.Compile(patternQueryId)
 	if errPattern != nil {
@@ -694,44 +844,46 @@ func SendSubscriptionsBatch(user *common.User) {
 		fmt.Println("Error compiling regex:", errPattern)
 	}
 
-	// Walk the directory
-	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println("Error accessing path:", path, err)
-			return err
-		}
-
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".txt") {
-			if fileContent, lastContentErr := ioutil.ReadFile(path); lastContentErr == nil && string(fileContent) != "" {
-				replacementQueryId := fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user))
-				textFromFileWithNewId := reQueryId.ReplaceAllString(string(fileContent), replacementQueryId)
-
-				replacementUserId := fmt.Sprintf(`"userId":"%s"`, user.UserId)
-				textFromFileWithNewId = reUserId.ReplaceAllString(textFromFileWithNewId, replacementUserId)
-
-				subscriptions = append(subscriptions, textFromFileWithNewId)
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		fmt.Println("Error walking through directory:", err)
-	}
-
 	for _, v := range subscriptions {
-		user.Logger.Debugf("Sending %s", strings.ReplaceAll(v, "\n", " ")[0:60])
-		//user.Logger.Debugf("Sending %s", v)
-		//user.Logger.Infoln(v)
+
+		replacementQueryId := fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user))
+		textFromFileWithNewId := reQueryId.ReplaceAllString(v, replacementQueryId)
+
+		replacementUserId := fmt.Sprintf(`"userId":"%s"`, user.UserId)
+		textFromFileWithNewId = reUserId.ReplaceAllString(textFromFileWithNewId, replacementUserId)
+
+		user.Logger.Debugf("Sending %s", strings.ReplaceAll(textFromFileWithNewId, "\n", " ")[0:60])
+		// user.Logger.Debugf("Sending %s", v)
+		// user.Logger.Infoln(v)
 		user.WsConnectionMutex.Lock()
-		err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(v))
+		err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(textFromFileWithNewId))
 		user.WsConnectionMutex.Unlock()
 		if err != nil {
 			user.Logger.Println("write 3:", err)
 			return
 		}
 		common.AddSubscriptionSent()
-		//time.Sleep(3 * time.Second)
+		// time.Sleep(3 * time.Second)
 	}
+}
+
+func RequestUrlWithCookies(client *http.Client, user *common.User, url string) {
+	user.Logger.Debugln(url)
+	// Create a new HTTP request to the authentication hook URL.
+	req, _ := http.NewRequest("GET", url, nil)
+	// Add cookies to the request.
+	for _, cookie := range user.ApiCookie {
+		req.AddCookie(cookie)
+	}
+
+	// Execute the HTTP request to obtain user session variables (like X-Hasura-Role)
+	// req.Header.Set("x-original-uri", authHookUrl+"?sessionToken="+sessionToken)
+	req.Header.Set("x-session-token", user.SessionToken)
+	// req.Header.Set("User-Agent", "hasura-graphql-engine")
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+
+	respBody, _ := ioutil.ReadAll(resp.Body)
+
+	user.Logger.Traceln(string(respBody))
 }
