@@ -1,0 +1,1 @@
+{"id":"4220596a-dcbb-443a-aa45-d1f6eae8d62a","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getGuestsCount","query":"subscription getGuestsCount {\n  user_guest_aggregate(where: {isWaiting: {_eq: true}}) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

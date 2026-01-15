@@ -1,0 +1,1 @@
+{"id":"0ffb31c6-eed7-4b9f-bea6-afe3dd2f93ca","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"padSession","query":"subscription padSession {\n  sharedNotes_session {\n    sessionId\n    sharedNotesExtId\n    padId\n    sharedNotes {\n      padId\n      __typename\n    }\n    __typename\n  }\n}"}}

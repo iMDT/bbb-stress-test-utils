@@ -1,0 +1,1 @@
+{"id":"11a14f82-8d0f-4e5e-b0a0-04c13db1e919","type":"subscribe","payload":{"variables":{"externalId":"notes"},"extensions":{},"operationName":"GetPadLastRev","query":"subscription GetPadLastRev($externalId: String!) {\n  sharedNotes(where: {sharedNotesExtId: {_eq: $externalId}}) {\n    lastRev\n    __typename\n  }\n}"}}

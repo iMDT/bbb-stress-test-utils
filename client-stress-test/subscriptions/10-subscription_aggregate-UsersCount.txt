@@ -1,0 +1,1 @@
+{"id":"9b068269-4afd-425c-a812-19e8446d0008","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"UsersCount","query":"subscription UsersCount {\n  user_aggregate {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

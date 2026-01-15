@@ -1,0 +1,1 @@
+{"id":"e3a85076-03e1-4cd9-8496-cb6ac5ab419c","type":"subscribe","payload":{"variables":{"externalId":"notes"},"extensions":{},"operationName":"getPadId","query":"query getPadId($externalId: String!) {\n  sharedNotes(where: {sharedNotesExtId: {_eq: $externalId}}) {\n    padId\n    sharedNotesExtId\n    __typename\n  }\n}"}}

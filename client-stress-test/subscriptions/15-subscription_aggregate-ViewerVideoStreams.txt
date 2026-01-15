@@ -1,0 +1,1 @@
+{"id":"fcaf9f83-5240-47c4-a3ee-898df60996aa","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"ViewerVideoStreams","query":"subscription ViewerVideoStreams {\n  user_camera_aggregate(\n    where: {user: {role: {_eq: \"VIEWER\"}, presenter: {_eq: false}}}\n  ) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

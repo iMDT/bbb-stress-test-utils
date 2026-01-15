@@ -1,0 +1,1 @@
+{"id":"45f78ada-c4fc-4385-b00c-1669e60c2597","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"PluginConfigurationQuery","query":"query PluginConfigurationQuery {\n  plugin {\n    name\n    javascriptEntrypointUrl\n    javascriptEntrypointIntegrity\n    localesBaseUrl\n    loadFailureReason\n    loadFailureSource\n    __typename\n  }\n}"}}

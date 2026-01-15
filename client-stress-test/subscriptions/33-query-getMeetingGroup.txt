@@ -1,0 +1,1 @@
+{"id":"ee15860a-505a-4db6-b801-59f0de234d70","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getMeetingGroup","query":"query getMeetingGroup {\n  meeting_group(order_by: {groupIndex: asc}) {\n    groupId\n    name\n    usersExtId\n    __typename\n  }\n}"}}
