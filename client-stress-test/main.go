@@ -26,7 +26,7 @@ func main() {
 	// Define command-line flags
 	configFile := flag.String("config", "", "Path to configuration file (e.g., config.json, config_1kusers.json)")
 	meetingIdFlag := flag.String("meetingId", "", "Meeting ID to join an existing meeting (skips meeting creation)")
-	numOfUsersFlag := flag.Int("numOfUsers", 1, "Number of users to join (overrides config)")
+	numOfUsersFlag := flag.Int("numOfUsers", -1, "Number of users to join (overrides config)")
 	sendChatMessagesFlag := flag.Bool("sendChatMessages", false, "Whether to send chat messages (overrides config)")
 	securitySaltFlag := flag.String("securitySalt", "", "Security salt (overrides config)")
 
@@ -46,6 +46,13 @@ func main() {
 	// Parse flags
 	flag.Parse()
 
+	sendChatMessagesFlagProvided := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "sendChatMessages" {
+			sendChatMessagesFlagProvided = true
+		}
+	})
+
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Jar: jar,
@@ -57,8 +64,14 @@ func main() {
 		common.SetConfigFile(*configFile)
 	}
 
-	common.SetNumOfUsersOverride(*numOfUsersFlag)
-	common.SetSendChatMessagesOverride(*sendChatMessagesFlag)
+	if *numOfUsersFlag != -1 {
+		common.SetNumOfUsersOverride(*numOfUsersFlag)
+	}
+
+	if sendChatMessagesFlagProvided {
+		common.SetSendChatMessagesOverride(*sendChatMessagesFlag)
+	}
+
 	if *securitySaltFlag != "" {
 		common.SetSecuritySaltOverride(*securitySaltFlag)
 	}
