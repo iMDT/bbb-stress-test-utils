@@ -30,9 +30,24 @@ type Config struct {
 }
 
 var ConfigFileName = "config.json"
+var overrideNumOfUsers *int
+var overrideSendChatMessages *bool
+var overrideSecuritySalt *string
 
 func SetConfigFile(configFileName string) {
 	ConfigFileName = configFileName
+}
+
+func SetNumOfUsersOverride(numOfUsers int) {
+	overrideNumOfUsers = &numOfUsers
+}
+
+func SetSendChatMessagesOverride(sendChatMessages bool) {
+	overrideSendChatMessages = &sendChatMessages
+}
+
+func SetSecuritySaltOverride(securitySalt string) {
+	overrideSecuritySalt = &securitySalt
 }
 
 func GetConfig() Config {
@@ -46,6 +61,18 @@ func GetConfig() Config {
 	err = json.NewDecoder(file).Decode(&config)
 	if err != nil {
 		panic(err)
+	}
+
+	if overrideNumOfUsers != nil {
+		config.NumOfUsers = *overrideNumOfUsers
+	}
+
+	if overrideSendChatMessages != nil {
+		config.SendChatMessages = *overrideSendChatMessages
+	}
+
+	if overrideSecuritySalt != nil {
+		config.SecuritySalt = *overrideSecuritySalt
 	}
 
 	return config
