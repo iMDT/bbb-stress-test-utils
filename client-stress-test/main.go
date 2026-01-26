@@ -29,6 +29,7 @@ func main() {
 	numOfUsersFlag := flag.Int("numOfUsers", -1, "Number of users to join (overrides config)")
 	sendChatMessagesFlag := flag.Bool("sendChatMessages", false, "Whether to send chat messages (overrides config)")
 	securitySaltFlag := flag.String("securitySalt", "", "Security salt (overrides config)")
+	serverHostFlag := flag.String("serverHost", "", "Host/Domain of the BBB server (overrides config)")
 
 	// Custom usage function
 	flag.Usage = func() {
@@ -74,6 +75,10 @@ func main() {
 
 	if *securitySaltFlag != "" {
 		common.SetSecuritySaltOverride(*securitySaltFlag)
+	}
+
+	if *serverHostFlag != "" {
+		common.SetServerHostOverride(*serverHostFlag)
 	}
 
 	config := common.GetConfig()

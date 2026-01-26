@@ -2,12 +2,12 @@
 
 Usage: `./bbb-stress-test [options]`
 
-First set the `bbbUrl`, `hasuraWs`, `securitySalt` and others at `config.json`
+First set the `bbbHost`, `securitySalt` and others at `config.json`
 ```bash
 jq '.securitySalt = "330a8b08c3b4c61533e1d0c5ce1ac88f" 
-    | .bbbUrl = "https://bbb30.bbb.imdt.dev/bigbluebutton/api" 
-    | .hasuraWs = "wss://bbb30.bbb.imdt.dev/graphql"' config.json > tmp.json && mv tmp.json config.json
+    | .bbbServerHost = "bbb30.bbb.imdt.dev"' config.json > tmp.json && mv tmp.json config.json
 ```
+Or inform them as parameter when calling the application.
 
 ### Options:
   - `--config` config.json
@@ -15,6 +15,7 @@ jq '.securitySalt = "330a8b08c3b4c61533e1d0c5ce1ac88f"
   - `--numOfUsers` 10 _(override config)_
   - `--sendChatMessages` true _(override config)_
   - `--securitySalt` 2312sdfdsf2 _(override config)_
+  - `--serverHost` myserver.com _(override config)_
 
 ### Examples:
   - `./bbb-stress-test --config=config.json`

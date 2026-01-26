@@ -9,9 +9,8 @@ type Config struct {
 	AppName                            string   `json:"app_name"`
 	LogLevel                           string   `json:"logLevel"`
 	SecuritySalt                       string   `json:"securitySalt"`
-	BbbUrl                             string   `json:"bbbUrl"`
+	BbbServerHost                      string   `json:"bbbServerHost"`
 	BbbDockerContainerName             string   `json:"bbbDockerContainerName"`
-	HasuraWs                           string   `json:"hasuraWs"`
 	NumOfUsers                         int      `json:"numOfUsers"`
 	IntervalBetweenBenchmarkUsersInSec int      `json:"intervalBetweenBenchmarkUsersInSec"`
 	IntervalBetweenMessagesInMs        int      `json:"intervalBetweenMessagesInMs"`
@@ -29,10 +28,13 @@ type Config struct {
 	Debug                              bool     `json:"debug"`
 }
 
-var ConfigFileName = "config.json"
-var overrideNumOfUsers *int
-var overrideSendChatMessages *bool
-var overrideSecuritySalt *string
+var (
+	ConfigFileName           = "config.json"
+	overrideNumOfUsers       *int
+	overrideSendChatMessages *bool
+	overrideSecuritySalt     *string
+	overrideServerHost       *string
+)
 
 func SetConfigFile(configFileName string) {
 	ConfigFileName = configFileName
@@ -48,6 +50,10 @@ func SetSendChatMessagesOverride(sendChatMessages bool) {
 
 func SetSecuritySaltOverride(securitySalt string) {
 	overrideSecuritySalt = &securitySalt
+}
+
+func SetServerHostOverride(serverHost string) {
+	overrideServerHost = &serverHost
 }
 
 func GetConfig() Config {
@@ -75,13 +81,17 @@ func GetConfig() Config {
 		config.SecuritySalt = *overrideSecuritySalt
 	}
 
+	if overrideServerHost != nil {
+		config.BbbServerHost = *overrideServerHost
+	}
+
 	return config
 }
 
 func GetApiUrl() string {
-	//return "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api"
+	// return "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api"
 	config := GetConfig()
-	return config.BbbUrl
+	return "https://" + config.BbbServerHost + "/bigbluebutton/api"
 }
 
 func GetSalt() string {
@@ -97,5 +107,5 @@ func GetSalt() string {
 
 func GetHasuraWs() string {
 	config := GetConfig()
-	return config.HasuraWs
+	return "wss://" + config.BbbServerHost + "/graphql"
 }
