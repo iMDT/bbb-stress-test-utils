@@ -30,6 +30,7 @@ func main() {
 	sendChatMessagesFlag := flag.Bool("sendChatMessages", false, "Whether to send chat messages (overrides config)")
 	securitySaltFlag := flag.String("securitySalt", "", "Security salt (overrides config)")
 	serverHostFlag := flag.String("serverHost", "", "Host/Domain of the BBB server (overrides config)")
+	userJoinOrderFlag := flag.String("userJoinOrder", "", "User join order: asc | desc | shuffle (overrides config)")
 
 	// Custom usage function
 	flag.Usage = func() {
@@ -79,6 +80,10 @@ func main() {
 
 	if *serverHostFlag != "" {
 		common.SetServerHostOverride(*serverHostFlag)
+	}
+
+	if *userJoinOrderFlag != "" {
+		common.SetUserJoinOrderOverride(*userJoinOrderFlag)
 	}
 
 	config := common.GetConfig()
@@ -151,10 +156,28 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	// Randomize list
-	rand.Shuffle(len(users), func(i, j int) {
-		users[i], users[j] = users[j], users[i]
-	})
+	userJoinOrder := strings.ToLower(strings.TrimSpace(config.UserJoinOrder))
+	if userJoinOrder == "" {
+		userJoinOrder = "shuffle"
+	}
+
+	switch userJoinOrder {
+	case "in-order", "inorder", "forward", "asc", "ascending":
+		// keep original order
+	case "reverse", "desc", "descending":
+		for i, j := 0, len(users)-1; i < j; i, j = i+1, j-1 {
+			users[i], users[j] = users[j], users[i]
+		}
+	case "random", "shuffle":
+		rand.Shuffle(len(users), func(i, j int) {
+			users[i], users[j] = users[j], users[i]
+		})
+	default:
+		log.Warnf("Unknown userJoinOrder %q. Using random.", config.UserJoinOrder)
+		rand.Shuffle(len(users), func(i, j int) {
+			users[i], users[j] = users[j], users[i]
+		})
+	}
 
 	for _, name := range users {
 		go addNewUser(meetingId, name, false)

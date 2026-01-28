@@ -10,12 +10,13 @@ jq '.securitySalt = "330a8b08c3b4c61533e1d0c5ce1ac88f"
 Or inform them as parameter when calling the application.
 
 ### Options:
-  - `--config` config.json
-  - `--meetingId` abc12
-  - `--numOfUsers` 10 _(override config)_
-  - `--sendChatMessages` true _(override config)_
-  - `--securitySalt` 2312sdfdsf2 _(override config)_
-  - `--serverHost` myserver.com _(override config)_
+  - `--config=` config.json
+  - `--meetingId=` abc12
+  - `--numOfUsers=` 10 _(override config)_
+  - `--sendChatMessages=` true _(override config)_
+  - `--securitySalt=` 2312sdfdsf2 _(override config)_
+  - `--serverHost=` myserver.com _(override config)_
+  - `--userJoinOrder=` asc|desc|shuffle _(override config)_
 
 ### Examples:
   - `./bbb-stress-test --config=config.json`

@@ -25,5 +25,6 @@
   "userTimeToLive": 999,
   "method": "graphql",
   "timeout": 999,
-  "debug": true
+  "debug": true,
+  "userJoinOrder": "shuffle"
 }

@@ -26,6 +26,7 @@ type Config struct {
 	Timeout                            int      `json:"timeout"`
 	BenchmarkingEnabled                bool     `json:"benchmarkingEnabled"`
 	Debug                              bool     `json:"debug"`
+	UserJoinOrder                      string   `json:"userJoinOrder"`
 }
 
 var (
@@ -34,6 +35,7 @@ var (
 	overrideSendChatMessages *bool
 	overrideSecuritySalt     *string
 	overrideServerHost       *string
+	overrideUserJoinOrder    *string
 )
 
 func SetConfigFile(configFileName string) {
@@ -54,6 +56,10 @@ func SetSecuritySaltOverride(securitySalt string) {
 
 func SetServerHostOverride(serverHost string) {
 	overrideServerHost = &serverHost
+}
+
+func SetUserJoinOrderOverride(userJoinOrder string) {
+	overrideUserJoinOrder = &userJoinOrder
 }
 
 func GetConfig() Config {
@@ -83,6 +89,10 @@ func GetConfig() Config {
 
 	if overrideServerHost != nil {
 		config.BbbServerHost = *overrideServerHost
+	}
+
+	if overrideUserJoinOrder != nil {
+		config.UserJoinOrder = *overrideUserJoinOrder
 	}
 
 	return config
