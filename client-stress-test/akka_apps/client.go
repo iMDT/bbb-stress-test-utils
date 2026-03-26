@@ -2,16 +2,64 @@ package akka_apps
 
 import (
 	"bbb-stress-test/common"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"strconv"
+	"sync"
+
+	"github.com/go-redis/redis/v8"
 )
 
-import (
-	"context"
+const redisChannel = "to-akka-apps-redis-channel"
+
+var (
+	redisClient *redis.Client
+	redisOnce   sync.Once
 )
+
+func getRedisClient() *redis.Client {
+	redisOnce.Do(func() {
+		redisClient = redis.NewClient(&redis.Options{
+			Addr: "127.0.0.1:6379",
+		})
+		if _, err := redisClient.Ping(context.Background()).Result(); err != nil {
+			log.Fatalf("Error connecting to Redis: %v", err)
+		}
+	})
+	return redisClient
+}
+
+func publishToRedis(msg interface{}) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Fatalf("Error serializing JSON message: %v", err)
+	}
+
+	result, err := getRedisClient().Publish(context.Background(), redisChannel, string(data)).Result()
+	if err != nil {
+		log.Fatalf("Error publishing to Redis channel: %v", err)
+	}
+
+	fmt.Printf("Message sent to channel '%s', %d subscribers received it.\n", redisChannel, result)
+}
+
+func buildMessage(name, meetingId, userId string, body interface{}) GenericReqMsg {
+	return GenericReqMsg{
+		Envelope: Envelope{
+			Name:      name,
+			Routing:   EnvelopeRouting{MeetingID: meetingId, UserID: userId},
+			Timestamp: common.GetTimestamp(),
+		},
+		Core: Core{
+			Header: Header{Name: name, MeetingID: meetingId, UserID: userId},
+			Body:   body,
+		},
+	}
+}
+
+// --- Message types ---
 
 type Envelope struct {
 	Name      string          `json:"name"`
@@ -42,21 +90,10 @@ type GenericReqMsg struct {
 	Core     Core     `json:"core"`
 }
 
-//type ValidateAuthTokenReqMsg struct {
-//	Envelope Envelope `json:"envelope"`
-//	Core     Core     `json:"core"`
-//}
-
 type ValidateAuthTokenReqMsgBody struct {
 	UserID    string `json:"userId"`
 	AuthToken string `json:"authToken"`
 }
-
-//
-//type UserJoinMeetingReqMsg struct {
-//	Envelope Envelope `json:"envelope"`
-//	Core     Core     `json:"core"`
-//}
 
 type UserJoinMeetingReqMsgBody struct {
 	UserID     string `json:"userId"`
@@ -82,188 +119,30 @@ type SendGroupChatMessageMsgBodyMsgSender struct {
 	Role string `json:"role"`
 }
 
-func SendValidateAuthTokenReqMsg(meetingId string, userId string, authToken string) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "",
-		DB:       0,
-	})
+// --- Public send functions ---
 
-	ctx := context.Background()
-
-	// Testar a conexão com o servidor Redis
-	_, err := client.Ping(ctx).Result()
-	if err != nil {
-		log.Fatalf("Error connecting to Redis server: %v", err)
-	}
-
-	// Criar a mensagem JSON
-	messageData := GenericReqMsg{
-		Envelope: Envelope{
-			Name:      "ValidateAuthTokenReqMsg",
-			Routing:   EnvelopeRouting{MeetingID: meetingId, UserID: userId},
-			Timestamp: common.GetTimestamp(),
-		},
-		Core: Core{
-			Header: Header{
-				Name:      "ValidateAuthTokenReqMsg",
-				MeetingID: meetingId,
-				UserID:    userId,
-			},
-			Body: ValidateAuthTokenReqMsgBody{
-				UserID:    userId,
-				AuthToken: authToken,
-			},
-		},
-	}
-
-	// Serializar a mensagem JSON
-	messageJSON, err := json.Marshal(messageData)
-	if err != nil {
-		log.Fatalf("Error serializing JSON message: %v", err)
-	}
-
-	// Enviar a mensagem JSON para o canal do Redis
-	channel := "to-akka-apps-redis-channel"
-	pubResult, err := client.Publish(ctx, channel, string(messageJSON)).Result()
-	if err != nil {
-		log.Fatalf("Error sending message to Redis channel: %v", err)
-	}
-
-	fmt.Printf("JSON message sent to channel '%s', %d subscribers received the message.\n", channel, pubResult)
-
-	// Fechar o cliente Redis
-	client.Close()
+func SendValidateAuthTokenReqMsg(meetingId, userId, authToken string) {
+	publishToRedis(buildMessage("ValidateAuthTokenReqMsg", meetingId, userId,
+		ValidateAuthTokenReqMsgBody{UserID: userId, AuthToken: authToken},
+	))
 }
 
-func SendUserJoinMeetingReqMsg(meetingId string, userId string, authToken string) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	ctx := context.Background()
-
-	// Testar a conexão com o servidor Redis
-	_, err := client.Ping(ctx).Result()
-	if err != nil {
-		log.Fatalf("Error connecting to Redis server: %v", err)
-	}
-
-	// Criar a mensagem JSON
-	messageData := GenericReqMsg{
-		Envelope: Envelope{
-			Name:      "UserJoinMeetingReqMsg",
-			Routing:   EnvelopeRouting{MeetingID: meetingId, UserID: userId},
-			Timestamp: common.GetTimestamp(),
-		},
-		Core: Core{
-			Header: Header{
-				Name:      "UserJoinMeetingReqMsg",
-				MeetingID: meetingId,
-				UserID:    userId,
-			},
-			Body: UserJoinMeetingReqMsgBody{
-				UserID:     userId,
-				AuthToken:  authToken,
-				ClientType: "HTML5",
-			},
-		},
-	}
-
-	// Serializar a mensagem JSON
-	messageJSON, err := json.Marshal(messageData)
-	if err != nil {
-		log.Fatalf("Error serializing JSON message: %v", err)
-	}
-
-	// Enviar a mensagem JSON para o canal do Redis
-	channel := "to-akka-apps-redis-channel"
-	pubResult, err := client.Publish(ctx, channel, string(messageJSON)).Result()
-	if err != nil {
-		log.Fatalf("Error sending message to Redis channel: %v", err)
-	}
-
-	fmt.Printf("JSON message sent to channel '%s', %d subscribers received the message.\n", channel, pubResult)
-
-	// Fechar o cliente Redis
-	client.Close()
+func SendUserJoinMeetingReqMsg(meetingId, userId, authToken string) {
+	publishToRedis(buildMessage("UserJoinMeetingReqMsg", meetingId, userId,
+		UserJoinMeetingReqMsgBody{UserID: userId, AuthToken: authToken, ClientType: "HTML5"},
+	))
 }
 
-func SendSendGroupChatMessageMsg(meetingId string, userId string, message string) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	ctx := context.Background()
-
-	// Testar a conexão com o servidor Redis
-	_, err := client.Ping(ctx).Result()
-	if err != nil {
-		log.Fatalf("Error connecting to Redis server: %v", err)
-	}
-
-	// Criar a mensagem JSON
-	messageData := GenericReqMsg{
-		Envelope: Envelope{
-			Name:      "SendGroupChatMessageMsg",
-			Routing:   EnvelopeRouting{MeetingID: meetingId, UserID: userId},
-			Timestamp: common.GetTimestamp(),
-		},
-		Core: Core{
-			Header: Header{
-				Name:      "SendGroupChatMessageMsg",
-				MeetingID: meetingId,
-				UserID:    userId,
+func SendSendGroupChatMessageMsg(meetingId, userId, message string) {
+	publishToRedis(buildMessage("SendGroupChatMessageMsg", meetingId, userId,
+		SendGroupChatMessageMsgBody{
+			Msg: SendGroupChatMessageMsgBodyMsg{
+				CorrelationId:      userId + strconv.FormatInt(common.GetTimestamp(), 10),
+				Sender:             SendGroupChatMessageMsgBodyMsgSender{Id: userId},
+				ChatEmphasizedText: true,
+				Message:            message,
 			},
-			Body: SendGroupChatMessageMsgBody{
-				Msg: SendGroupChatMessageMsgBodyMsg{
-					CorrelationId:      userId + strconv.FormatInt(common.GetTimestamp(), 10),
-					Sender:             SendGroupChatMessageMsgBodyMsgSender{Id: userId, Name: "", Role: ""},
-					ChatEmphasizedText: true,
-					Message:            message,
-				},
-				ChatId: "MAIN-PUBLIC-GROUP-CHAT",
-			},
+			ChatId: "MAIN-PUBLIC-GROUP-CHAT",
 		},
-	}
-
-	type SendGroupChatMessageMsgBody struct {
-		Msg    SendGroupChatMessageMsgBodyMsg `json:"correlationId"`
-		chatId string                         `json:"chatId"`
-	}
-
-	type SendGroupChatMessageMsgBodyMsg struct {
-		CorrelationId      string                               `json:"correlationId"`
-		sender             SendGroupChatMessageMsgBodyMsgSender `json:"sender"`
-		chatEmphasizedText string                               `json:"chatEmphasizedText"`
-		message            string                               `json:"message"`
-	}
-
-	type SendGroupChatMessageMsgBodyMsgSender struct {
-		id   string `json:"id"`
-		name string `json:"name"`
-		role string `json:"role"`
-	}
-
-	// Serializar a mensagem JSON
-	messageJSON, err := json.Marshal(messageData)
-	if err != nil {
-		log.Fatalf("Error serializing JSON message: %v", err)
-	}
-
-	// Enviar a mensagem JSON para o canal do Redis
-	channel := "to-akka-apps-redis-channel"
-	pubResult, err := client.Publish(ctx, channel, string(messageJSON)).Result()
-	if err != nil {
-		log.Fatalf("Error sending message to Redis channel: %v", err)
-	}
-
-	fmt.Printf("JSON message sent to channel '%s', %d subscribers received the message.\n", channel, pubResult)
-
-	// Fechar o cliente Redis
-	client.Close()
+	))
 }

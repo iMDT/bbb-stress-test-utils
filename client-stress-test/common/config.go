@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"os"
+	"sync"
 )
 
 type Config struct {
@@ -30,92 +31,58 @@ type Config struct {
 }
 
 var (
-	ConfigFileName           = "config.json"
+	configFileName           = "config.json"
 	overrideNumOfUsers       *int
 	overrideSendChatMessages *bool
 	overrideSecuritySalt     *string
 	overrideServerHost       *string
 	overrideUserJoinOrder    *string
+
+	cachedConfig Config
+	configOnce   sync.Once
 )
 
-func SetConfigFile(configFileName string) {
-	ConfigFileName = configFileName
-}
+// SetConfigFile must be called before the first GetConfig() call.
+func SetConfigFile(name string)             { configFileName = name }
+func SetNumOfUsersOverride(n int)           { overrideNumOfUsers = &n }
+func SetSendChatMessagesOverride(v bool)    { overrideSendChatMessages = &v }
+func SetSecuritySaltOverride(s string)      { overrideSecuritySalt = &s }
+func SetServerHostOverride(h string)        { overrideServerHost = &h }
+func SetUserJoinOrderOverride(order string) { overrideUserJoinOrder = &order }
 
-func SetNumOfUsersOverride(numOfUsers int) {
-	overrideNumOfUsers = &numOfUsers
-}
-
-func SetSendChatMessagesOverride(sendChatMessages bool) {
-	overrideSendChatMessages = &sendChatMessages
-}
-
-func SetSecuritySaltOverride(securitySalt string) {
-	overrideSecuritySalt = &securitySalt
-}
-
-func SetServerHostOverride(serverHost string) {
-	overrideServerHost = &serverHost
-}
-
-func SetUserJoinOrderOverride(userJoinOrder string) {
-	overrideUserJoinOrder = &userJoinOrder
-}
-
+// GetConfig returns the cached configuration. The config is loaded once on the
+// first call; all Set*Override functions must be called before that.
 func GetConfig() Config {
-	file, err := os.Open(ConfigFileName)
+	configOnce.Do(loadConfig)
+	return cachedConfig
+}
+
+func loadConfig() {
+	f, err := os.Open(configFileName)
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer f.Close()
 
-	var config Config
-	err = json.NewDecoder(file).Decode(&config)
-	if err != nil {
+	if err = json.NewDecoder(f).Decode(&cachedConfig); err != nil {
 		panic(err)
 	}
 
-	if overrideNumOfUsers != nil {
-		config.NumOfUsers = *overrideNumOfUsers
-	}
-
-	if overrideSendChatMessages != nil {
-		config.SendChatMessages = *overrideSendChatMessages
-	}
-
-	if overrideSecuritySalt != nil {
-		config.SecuritySalt = *overrideSecuritySalt
-	}
-
-	if overrideServerHost != nil {
-		config.BbbServerHost = *overrideServerHost
-	}
-
-	if overrideUserJoinOrder != nil {
-		config.UserJoinOrder = *overrideUserJoinOrder
-	}
-
-	return config
+	if overrideNumOfUsers != nil       { cachedConfig.NumOfUsers = *overrideNumOfUsers }
+	if overrideSendChatMessages != nil { cachedConfig.SendChatMessages = *overrideSendChatMessages }
+	if overrideSecuritySalt != nil     { cachedConfig.SecuritySalt = *overrideSecuritySalt }
+	if overrideServerHost != nil       { cachedConfig.BbbServerHost = *overrideServerHost }
+	if overrideUserJoinOrder != nil    { cachedConfig.UserJoinOrder = *overrideUserJoinOrder }
 }
 
 func GetApiUrl() string {
-	// return "https://bbb27.bbbvm.imdt.com.br/bigbluebutton/api"
-	config := GetConfig()
-	return "https://" + config.BbbServerHost + "/bigbluebutton/api"
+	return "https://" + GetConfig().BbbServerHost + "/bigbluebutton/api"
 }
 
 func GetSalt() string {
-	//	if len(os.Args) < 2 {
-	//		fmt.Println("Use: ./bbb-stress-test [secret salt]")
-	//		os.Exit(1)
-	//	}
-	//	return os.Args[1]
-
-	config := GetConfig()
-	return config.SecuritySalt
+	return GetConfig().SecuritySalt
 }
 
 func GetHasuraWs() string {
-	config := GetConfig()
-	return "wss://" + config.BbbServerHost + "/graphql"
+	return "wss://" + GetConfig().BbbServerHost + "/graphql"
 }

@@ -23,29 +23,20 @@ import (
 var currNumOfMsgs int64 = 1
 
 func main() {
-	// Define command-line flags
-	configFile := flag.String("config", "", "Path to configuration file (e.g., config.json, config_1kusers.json)")
-	meetingIdFlag := flag.String("meetingId", "", "Meeting ID to join an existing meeting (skips meeting creation)")
-	numOfUsersFlag := flag.Int("numOfUsers", -1, "Number of users to join (overrides config)")
-	sendChatMessagesFlag := flag.Bool("sendChatMessages", false, "Whether to send chat messages (overrides config)")
+	configFile := flag.String("config", "", "Path to configuration file (e.g., config.json)")
+	meetingIdFlag := flag.String("meetingId", "", "Join an existing meeting instead of creating one")
+	numOfUsersFlag := flag.Int("numOfUsers", -1, "Number of users (overrides config)")
+	sendChatMessagesFlag := flag.Bool("sendChatMessages", false, "Send chat messages (overrides config)")
 	securitySaltFlag := flag.String("securitySalt", "", "Security salt (overrides config)")
-	serverHostFlag := flag.String("serverHost", "", "Host/Domain of the BBB server (overrides config)")
-	userJoinOrderFlag := flag.String("userJoinOrder", "", "User join order: asc | desc | shuffle (overrides config)")
+	serverHostFlag := flag.String("serverHost", "", "BBB server host (overrides config)")
+	userJoinOrderFlag := flag.String("userJoinOrder", "", "Join order: asc | desc | shuffle (overrides config)")
 
-	// Custom usage function
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "BBB Stress Test Client\n\n")
-		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Options:\n")
+		fmt.Fprintf(os.Stderr, "BBB Stress Test Client\n\nUsage: %s [options]\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  %s --config=config.json\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s --config=config.json --meetingId=abc123def456\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s --meetingId=abc123def456\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "\nExamples:\n  %s --config=config.json\n  %s --meetingId=abc123\n\n", os.Args[0], os.Args[0])
 	}
 
-	// Parse flags
 	flag.Parse()
 
 	sendChatMessagesFlagProvided := false
@@ -55,323 +46,192 @@ func main() {
 		}
 	})
 
-	jar, _ := cookiejar.New(nil)
-	client := &http.Client{
-		Jar: jar,
-	}
-
-	// Set config file if provided
+	// Apply flag overrides before the first GetConfig() call.
 	if *configFile != "" {
-		fmt.Printf("config name: %s\n", *configFile)
+		fmt.Printf("Using config: %s\n", *configFile)
 		common.SetConfigFile(*configFile)
 	}
-
 	if *numOfUsersFlag != -1 {
 		common.SetNumOfUsersOverride(*numOfUsersFlag)
 	}
-
 	if sendChatMessagesFlagProvided {
 		common.SetSendChatMessagesOverride(*sendChatMessagesFlag)
 	}
-
 	if *securitySaltFlag != "" {
 		common.SetSecuritySaltOverride(*securitySaltFlag)
 	}
-
 	if *serverHostFlag != "" {
 		common.SetServerHostOverride(*serverHostFlag)
 	}
-
 	if *userJoinOrderFlag != "" {
 		common.SetUserJoinOrderOverride(*userJoinOrderFlag)
 	}
 
 	config := common.GetConfig()
 
-	// logrus := logrus.New()
-	// logger := logrus.NewEntry(logrus.New())
-
-	logLevelFromConfig, _ := log.ParseLevel(config.LogLevel)
-	log.SetLevel(logLevelFromConfig)
-	// log.SetFormatter(&log.JSONFormatter{})
-
+	logLevel, _ := log.ParseLevel(config.LogLevel)
+	log.SetLevel(logLevel)
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: time.RFC3339Nano,
 		FullTimestamp:   true,
 	})
 
-	//file, err := os.OpenFile("/tmp/benchmarking_stress.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	//if err != nil {
-	//	log.Fatal("Erro ao abrir arquivo de log:", err)
-	//}
-	//defer file.Close()
-	//log.SetOutput(file)
+	logger := log.WithField("_routine", "main")
 
-	log := log.WithField("_routine", "main")
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{Jar: jar}
 
 	var meetingId string
-
-	// Use provided meeting ID or create a new meeting
 	if *meetingIdFlag != "" {
 		meetingId = *meetingIdFlag
-		println("Using provided meeting ID: ", meetingId)
+		logger.Info("Using provided meeting ID: ", meetingId)
 	} else {
 		meetingId = bbb_web.RequestApiCreate(client)
-		println("Meeting id: ", meetingId)
+		logger.Info("Created meeting: ", meetingId)
 	}
 
-	println("")
-	println("--------------------------------------------------")
-	println("Use this link to join the meeting in your browser:")
-	println("")
-	println("MODERATOR:")
-	println(bbb_web.GenerateJoinUrl(meetingId, "Teacher", "true", true))
-	println("")
-	println("STUDENT:")
-	println(bbb_web.GenerateJoinUrl(meetingId, "Student 00089", "true", false))
-	println("--------------------------------------------------")
-	println("")
+	fmt.Println()
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("Join links:")
+	fmt.Println()
+	fmt.Println("MODERATOR:")
+	fmt.Println(bbb_web.GenerateJoinUrl(meetingId, "Teacher", "true", true))
+	fmt.Println()
+	fmt.Println("STUDENT:")
+	fmt.Println(bbb_web.GenerateJoinUrl(meetingId, "Student 00089", "true", false))
+	fmt.Println("--------------------------------------------------")
+	fmt.Println()
 
-	fmt.Println(fmt.Sprintf("It will add %d users to the meeting.", config.NumOfUsers))
+	logger = logger.WithField("meeting", meetingId)
+	logger.Infof("Adding %d users to the meeting.", config.NumOfUsers)
 
-	log = log.WithField("meeting", meetingId)
-
-	log.Infof("It will add %d users to the meeting.", config.NumOfUsers)
-
-	// Start benchmarking client
 	if config.BenchmarkingEnabled {
-		go benchmarking(meetingId)
+		go runBenchmarkingUsers(meetingId)
 	}
 
 	time.Sleep(time.Duration(config.DelayFirstUserJoinInSecs) * time.Second)
 
 	startedAt := time.Now()
+	users := buildUserList(config.NumOfUsers, config.UserJoinOrder)
 
-	var users []string
+	for _, name := range users {
+		go addNewUser(meetingId, name, false)
+		delay := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MinIntervalBetweenUserJoinInMs
+		time.Sleep(time.Duration(delay) * time.Millisecond)
+	}
 
-	for i := 0; i < config.NumOfUsers; i++ {
-		name := fmt.Sprintf("Student %0*d", 5, i)
-		users = append(users, name)
+	timeRunning := time.Now()
+	for {
+		joined := common.GetNumOfJoinedUsers()
+		logger.Infof("Joined users: %d", joined)
+
+		if joined >= config.NumOfUsers {
+			logger.Infof("All %d users joined in %.1f seconds.", joined, time.Since(startedAt).Seconds())
+			time.Sleep(time.Duration(config.DelayToFinishTestSecs) * time.Second)
+			break
+		}
+
+		if time.Since(timeRunning).Seconds() > float64(config.Timeout) {
+			logger.Infoln("Exiting due to timeout.")
+			break
+		}
+
+		if config.BenchmarkingEnabled {
+			time.Sleep(4 * time.Second)
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	if config.BenchmarkingEnabled {
+		timestamp := time.Now().Format("2006-01-02 15:04:05")
+		common.ExportCsv(timestamp)
+		common.DrawPlot(timestamp)
+	}
+}
+
+// buildUserList creates an ordered list of user display names.
+func buildUserList(n int, order string) []string {
+	users := make([]string, n)
+	for i := range users {
+		users[i] = fmt.Sprintf("Student %0*d", 5, i)
 	}
 
 	rand.Seed(time.Now().UnixNano())
 
-	userJoinOrder := strings.ToLower(strings.TrimSpace(config.UserJoinOrder))
-	if userJoinOrder == "" {
-		userJoinOrder = "shuffle"
-	}
-
-	switch userJoinOrder {
+	switch strings.ToLower(strings.TrimSpace(order)) {
 	case "in-order", "inorder", "forward", "asc", "ascending":
-		// keep original order
+		// keep ascending order
 	case "reverse", "desc", "descending":
 		for i, j := 0, len(users)-1; i < j; i, j = i+1, j-1 {
 			users[i], users[j] = users[j], users[i]
 		}
-	case "random", "shuffle":
-		rand.Shuffle(len(users), func(i, j int) {
-			users[i], users[j] = users[j], users[i]
-		})
-	default:
-		log.Warnf("Unknown userJoinOrder %q. Using random.", config.UserJoinOrder)
-		rand.Shuffle(len(users), func(i, j int) {
-			users[i], users[j] = users[j], users[i]
-		})
+	default: // "random", "shuffle", or unrecognised
+		rand.Shuffle(len(users), func(i, j int) { users[i], users[j] = users[j], users[i] })
 	}
 
-	for _, name := range users {
-		go addNewUser(meetingId, name, false)
-		delayBetweenJoins := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MaxIntervalBetweenUserJoinInMs
-		time.Sleep(time.Duration(delayBetweenJoins) * time.Millisecond)
-	}
-
-	rand.Seed(time.Now().UnixNano())
-
-	// log.Infof("Waiting to finish....")
-
-	timeRunning := time.Now()
-
-	exit := false
-	for !exit {
-
-		log.Infof("Current number of joined users::::: %d\n", common.GetNumOfJoinedUsers())
-
-		if common.GetNumOfJoinedUsers() >= config.NumOfUsers {
-			log.Infof("%d users joined! Exiting...\n", common.GetNumOfJoinedUsers())
-			exit = true
-
-			log.Infof("It took: %v seconds.\n", time.Since(startedAt).Seconds())
-
-			time.Sleep(time.Duration(config.DelayToFinishTestSecs) * time.Second)
-		}
-
-		// Wait a benchmark user
-		if config.BenchmarkingEnabled {
-			time.Sleep(time.Duration(4) * time.Second)
-		} else {
-			time.Sleep(time.Duration(1) * time.Second)
-		}
-
-		if time.Since(timeRunning).Seconds() > float64(config.Timeout) {
-			log.Infoln("Exiting due to timeout.")
-			exit = true
-		}
-	}
-
-	formattedDate := time.Now().Format("2006-01-02 15:04:05")
-
-	if config.BenchmarkingEnabled {
-		common.ExportCsv(formattedDate)
-		common.DrawPlot(formattedDate)
-	}
+	return users
 }
 
-func benchmarking(meetingId string) {
-	//file, err := os.OpenFile("benchmarking.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	//if err != nil {
-	//	log.Fatal("Erro ao abrir arquivo de log:", err)
-	//}
-	//defer file.Close()
-
-	// file, err := os.OpenFile("example.txt", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-
+// runBenchmarkingUsers periodically adds a benchmarking user until all normal
+// users have joined.
+func runBenchmarkingUsers(meetingId string) {
 	fileJson, err := os.OpenFile("benchmarking.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
 	if err != nil {
-		log.Fatal("Error opening file:", err)
+		log.Fatal("Error opening benchmarking file:", err)
 	}
 	defer fileJson.Close()
 
-	// file, _ := os.Create("benchmarking_" + meetingId + ".csv")
-
-	//
-	//logEspecial := log.New()
-	//logEspecial.Out = file
-	//logEspecial.SetLevel(log.InfoLevel)
-	//logEspecial.SetFormatter(&log.JSONFormatter{})
-	//
-	//logEspecial.Info("Starting benchmarking")
-
-	benchmarkingCurrUser := 1
+	currUser := 1
 	for {
-
-		//percent, err := cpu.Percent(1*time.Second, false)
-		//if err != nil {
-		//	fmt.Println("Error:", err)
-		//	return
-		//}
-		//
-		//// percent is a slice of float64 values representing the usage percentages.
-		//// Since we passed 'false' for percpu, it should have only one element representing the overall usage.
-		//log.Infof("CPU Usage: %.2f%%\n", percent[0])
-		//
-		//// Get virtual memory usage statistics
-		//vmStat, err := mem.VirtualMemory()
-		//if err != nil {
-		//	fmt.Println("Error:", err)
-		//	return
-		//}
-		//
-		//// Print some of the memory usage statistics
-		//log.Infof("Memory Total: %v, Free: %v, UsedPercent: %.2f%%\n", vmStat.Total, vmStat.Free, vmStat.UsedPercent)
-
-		// logEspecial.Info("It will add a new user-----------------")
-		// logEspecial.Info("Users clients: ", common.GetNumOfUsers())
-		// logEspecial.Info("Users connected: ", common.GetNumOfConnectedUsers())
-		// logEspecial.Info("Users joined: ", common.GetNumOfJoinedUsers())
-
-		go addNewUser(meetingId, fmt.Sprintf("Benchmarking %02d", benchmarkingCurrUser), true)
-		benchmarkingCurrUser++
+		go addNewUser(meetingId, fmt.Sprintf("Benchmarking %02d", currUser), true)
+		currUser++
 		time.Sleep(time.Duration(common.GetConfig().IntervalBetweenBenchmarkUsersInSec) * time.Second)
 
 		if common.GetNumOfJoinedUsers() >= common.GetConfig().NumOfUsers {
 			break
 		}
-
 	}
 }
 
-func addNewUser(meetingId string, name string, benchmarking bool) {
+func addNewUser(meetingId, name string, benchmarking bool) {
 	jar, _ := cookiejar.New(nil)
-	newClient := &http.Client{
-		Jar: jar,
-	}
+	newClient := &http.Client{Jar: jar}
 
 	userId, sessionToken, authToken, apiCookie := bbb_web.RequestApiJoin(newClient, meetingId, name)
-	log.WithField("user", name)
-	//if benchmarkingLogger != nil {
-	//	benchmarkingLogger = benchmarkingLogger.WithField("user", name)
-	//}
-
-	log.Debugln("sessionToken: " + sessionToken)
-
 	if userId == "" {
-		log.Errorf("It was not possible to add the user " + name)
+		log.Errorf("Could not add user %s", name)
 		return
 	}
 
+	log.Debugln("sessionToken:", sessionToken)
+
 	config := common.GetConfig()
 
-	if config.Method == "graphql" {
-
+	switch config.Method {
+	case "graphql":
 		user := common.User{
-			UserId:             userId,
-			SessionToken:       sessionToken,
-			AuthToken:          authToken,
-			Name:               name,
-			ApiCookie:          apiCookie,
-			WsConnectionClosed: true,
-			ConnAckReceived:    false,
-			Joined:             false,
-			Pong:               false,
-			Chat:               false,
-			CurrMessageId:      1,
-			TimeToLive:         config.UserTimeToLive,
-			Logger:             log.WithField("user", name),
-			Benchmarking:       benchmarking,
-			// BenchmarkingLogger: benchmarkingLogger,
+			UserId:              userId,
+			SessionToken:        sessionToken,
+			AuthToken:           authToken,
+			Name:                name,
+			ApiCookie:           apiCookie,
+			WsConnectionClosed:  true,
+			CurrMessageId:       1,
+			TimeToLive:          config.UserTimeToLive,
+			Logger:              log.WithField("user", name),
+			Benchmarking:        benchmarking,
 			BenchmarkingMetrics: make(map[string]interface{}),
-			// BenchmarkingCsvWriter: benchmarkingCsvWriter,
-			Problem: false,
 		}
-
 		common.AddUser()
 
-		if user.Benchmarking {
-			cmd := exec.Command("/usr/bin/docker", "stats", config.BbbDockerContainerName, "--no-stream", "--format", "{{.CPUPerc}}")
-			output, err := cmd.Output()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// Convert the output to a string and print it
-			// log.Info(string(output))
-
-			cpuUsage := string(output)
-			cpuUsage = strings.Trim(cpuUsage, "\n")
-			cpuUsage = strings.Trim(cpuUsage, "%")
-			user.BenchmarkingMetrics["cpu"] = cpuUsage
-
-			cmd = exec.Command("/usr/bin/docker", "stats", config.BbbDockerContainerName, "--no-stream", "--format", "{{.MemPerc}}")
-			output, err = cmd.Output()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			memUsage := string(output)
-			memUsage = strings.Trim(memUsage, "\n")
-			memUsage = strings.Trim(memUsage, "%")
-			user.BenchmarkingMetrics["mem"] = memUsage
-
-			user.BenchmarkingMetrics["users_clients"] = common.GetNumOfUsers()
-			user.BenchmarkingMetrics["users_connected"] = common.GetNumOfConnectedUsers()
-			user.BenchmarkingMetrics["users_joined"] = common.GetNumOfJoinedUsers()
-			user.BenchmarkingMetrics["subscriptions_sent"] = common.GetNumOfSubscriptionsSent()
-			user.BenchmarkingMetrics["subscriptions_received"] = common.GetNumOfSubscriptionsReceived()
+		if benchmarking {
+			collectDockerMetrics(&user, config)
 		}
 
 		hasura.StartUser(&user)
 
-	} else if config.Method == "redis" {
+	case "redis":
 		fmt.Println("Sending Redis msg")
 		akka_apps.SendValidateAuthTokenReqMsg(meetingId, userId, authToken)
 		time.Sleep(1 * time.Second)
@@ -381,10 +241,33 @@ func addNewUser(meetingId string, name string, benchmarking bool) {
 		if len(config.ListOfMessages) > 0 {
 			numOfMessages := rand.Intn(len(config.ListOfMessages)) + 1
 			for i := 0; i < numOfMessages; i++ {
-				akka_apps.SendSendGroupChatMessageMsg(meetingId, userId, strconv.FormatInt(currNumOfMsgs, 10)+" "+config.ListOfMessages[i])
+				msg := strconv.FormatInt(currNumOfMsgs, 10) + " " + config.ListOfMessages[i]
+				akka_apps.SendSendGroupChatMessageMsg(meetingId, userId, msg)
 				currNumOfMsgs++
 				time.Sleep(time.Duration(config.IntervalBetweenMessagesInMs) * time.Millisecond)
 			}
 		}
 	}
+}
+
+// collectDockerMetrics gathers the BBB container's CPU and memory usage along
+// with current user counts into the benchmarking metrics map.
+func collectDockerMetrics(user *common.User, config common.Config) {
+	cpuOut, err := exec.Command("/usr/bin/docker", "stats", config.BbbDockerContainerName, "--no-stream", "--format", "{{.CPUPerc}}").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	user.BenchmarkingMetrics["cpu"] = strings.Trim(strings.TrimRight(string(cpuOut), "\n"), "%")
+
+	memOut, err := exec.Command("/usr/bin/docker", "stats", config.BbbDockerContainerName, "--no-stream", "--format", "{{.MemPerc}}").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	user.BenchmarkingMetrics["mem"] = strings.Trim(strings.TrimRight(string(memOut), "\n"), "%")
+
+	user.BenchmarkingMetrics["users_clients"] = common.GetNumOfUsers()
+	user.BenchmarkingMetrics["users_connected"] = common.GetNumOfConnectedUsers()
+	user.BenchmarkingMetrics["users_joined"] = common.GetNumOfJoinedUsers()
+	user.BenchmarkingMetrics["subscriptions_sent"] = common.GetNumOfSubscriptionsSent()
+	user.BenchmarkingMetrics["subscriptions_received"] = common.GetNumOfSubscriptionsReceived()
 }
