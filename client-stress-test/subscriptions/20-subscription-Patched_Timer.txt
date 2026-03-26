@@ -1,0 +1,1 @@
+{"id":"9d20626f-8f06-426b-9dd1-db49ee5ad139","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"Patched_Timer","query":"subscription Patched_Timer {\n  timer {\n    accumulated\n    active\n    songTrack\n    time\n    stopwatch\n    running\n    startedAt\n    elapsed\n    __typename\n  }\n}"}}

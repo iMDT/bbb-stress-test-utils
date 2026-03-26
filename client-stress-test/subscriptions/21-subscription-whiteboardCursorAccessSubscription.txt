@@ -1,0 +1,1 @@
+{"id":"647ebd81-4347-4a16-b300-29deb411c314","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"whiteboardCursorAccessSubscription","query":"subscription whiteboardCursorAccessSubscription {\n  user_whiteboardCursorAccess(order_by: {userId: asc}) {\n    meetingId\n    userId\n    name\n    presenter\n    isModerator\n    __typename\n  }\n}"}}

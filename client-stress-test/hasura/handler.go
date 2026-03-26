@@ -1,12 +1,13 @@
 package hasura
 
 import (
-	"bbb-stress-test/common"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
+
+	"bbb-stress-test/common"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -124,6 +125,12 @@ func handleNext(user *common.User, message []byte, msgId string, receivedSubscri
 	if bytes.Contains(message, []byte("chat_message_public")) {
 		handleChatMessagePublic(user, message)
 	}
+
+	if id, err := strconv.Atoi(msgId); err == nil {
+		if opName, tracked := user.SubscriptionNames[id]; tracked && isMeetingIdValidationTarget(opName) {
+			validateSubscriptionMeetingIds(user, message, opName)
+		}
+	}
 }
 
 func handleUserCurrentData(user *common.User, message []byte) {
@@ -234,5 +241,48 @@ func handleComplete(user *common.User, msg hasuraMessageInfo) {
 	if user.Benchmarking && msg.Id == fmt.Sprintf("%d", user.UserJoinMutationId) {
 		user.Logger.Info("Join COMPLETE.")
 		user.BenchmarkingMetrics["join_completed"] = time.Since(user.CreatedTime)
+	}
+}
+
+// meetingIdValidationTargets lists the subscription operation names whose
+// incoming data should be validated against the user's expected meetingId.
+var meetingIdValidationTargets = map[string]bool{
+	"Patched_VideoStreams":               true,
+	"Patched_UserListSubscription":       true,
+	"whiteboardCursorAccessSubscription": true,
+}
+
+func isMeetingIdValidationTarget(operationName string) bool {
+	return meetingIdValidationTargets[operationName]
+}
+
+// validateSubscriptionMeetingIds inspects every item returned in the "next"
+// payload and warns if any item's meetingId does not match the user's meeting.
+// Items without a meetingId field are silently skipped.
+func validateSubscriptionMeetingIds(user *common.User, message []byte, operationName string) {
+	var fullMsg hasuraMessage
+	if err := json.Unmarshal(message, &fullMsg); err != nil {
+		user.Logger.Warnf("[%s] failed to parse message for meetingId validation: %v", operationName, err)
+		return
+	}
+
+	for dataKey, rawData := range fullMsg.Payload.Data {
+		var items []map[string]interface{}
+		if err := json.Unmarshal(rawData, &items); err != nil {
+			continue // field is not an array (e.g. aggregate counts)
+		}
+
+		for _, item := range items {
+			receivedMeetingId, ok := item["meetingId"].(string)
+			if !ok {
+				continue // item has no meetingId field
+			}
+			if receivedMeetingId != user.MeetingId {
+				user.Logger.Warnf(
+					"[%s] meetingId mismatch in %s: got %q, expected %q",
+					operationName, dataKey, receivedMeetingId, user.MeetingId,
+				)
+			}
+		}
 	}
 }

@@ -222,6 +222,8 @@ func addNewUser(meetingId, name string, benchmarking bool) {
 			Logger:              log.WithField("user", name),
 			Benchmarking:        benchmarking,
 			BenchmarkingMetrics: make(map[string]interface{}),
+			MeetingId:           meetingId,
+			SubscriptionNames:   make(map[int]string),
 		}
 		common.AddUser()
 

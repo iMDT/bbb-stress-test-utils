@@ -1,0 +1,1 @@
+{"id":"aeeff8f2-5afc-44ed-b8f9-99eebad7221c","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"whiteboardWriteAccessSubscription","query":"subscription whiteboardWriteAccessSubscription {\n  user_whiteboardWriteAccess(order_by: {userId: asc}) {\n    userId\n    name\n    presenter\n    isModerator\n    __typename\n  }\n}"}}

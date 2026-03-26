@@ -2,6 +2,7 @@ package hasura
 
 import (
 	"bbb-stress-test/common"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -58,6 +59,20 @@ func ReadSubscriptions() {
 	fmt.Printf("%d subscriptions found.\n", count)
 }
 
+// recordSubscriptionName parses the operationName from the raw subscription
+// JSON and stores the msgId → operationName mapping on the user. This lets the
+// message handler identify which subscription a "next" message belongs to.
+func recordSubscriptionName(user *common.User, msgId int, rawSubscription string) {
+	var parsed struct {
+		Payload struct {
+			OperationName string `json:"operationName"`
+		} `json:"payload"`
+	}
+	if err := json.Unmarshal([]byte(rawSubscription), &parsed); err == nil && parsed.Payload.OperationName != "" {
+		user.SubscriptionNames[msgId] = parsed.Payload.OperationName
+	}
+}
+
 // SendUserCurrentSubscription sends the userCurrent subscription that the
 // server uses to notify the client when the user has fully joined the meeting.
 func SendUserCurrentSubscription(user *common.User) {
@@ -93,7 +108,10 @@ func SendSubscriptionsBatch(user *common.User) {
 	reUserId := regexp.MustCompile(`"userId":"\d+"`)
 
 	for _, v := range subscriptions {
-		text := reQueryId.ReplaceAllString(v, fmt.Sprintf(`"id":"%d"`, GetCurrMessageId(user)))
+		msgId := GetCurrMessageId(user)
+		recordSubscriptionName(user, msgId, v)
+
+		text := reQueryId.ReplaceAllString(v, fmt.Sprintf(`"id":"%d"`, msgId))
 		text = reUserId.ReplaceAllString(text, fmt.Sprintf(`"userId":"%s"`, user.UserId))
 
 		user.Logger.Debugf("Sending %s", strings.ReplaceAll(text, "\n", " ")[:60])

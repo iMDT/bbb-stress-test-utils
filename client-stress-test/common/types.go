@@ -40,4 +40,6 @@ type User struct {
 	BenchmarkingMetrics map[string]interface{}
 	CreatedTime         time.Time
 	Problem             bool
+	MeetingId           string
+	SubscriptionNames   map[int]string // subscription message ID → GraphQL operationName
 }
