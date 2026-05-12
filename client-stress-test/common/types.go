@@ -50,4 +50,8 @@ type User struct {
 	CurrentPageId                          string // pageId currently used in the active pageId-dependent subscriptions
 	PresPageCurrState                      []byte // last known pres_page_curr JSON array, kept in sync by applying patches
 	ActivePageIdSubMsgIds                  []int  // msgIds of currently active pageId-dependent subscriptions; used to cancel on page change
+
+	UserCurrentState       []byte // last known user_current JSON array, kept in sync by applying patches
+	WhiteboardWriteAccess  bool   // mirrors user_current[0].whiteboardWriteAccess
+	CursorPublishingActive bool   // true while a cursor-publishing goroutine is running for this user
 }

@@ -160,22 +160,42 @@ func handleUserCurrentData(user *common.User, message []byte) {
 		return
 	}
 
-	var payloadItems []interface{}
-	if err := json.Unmarshal(fullMsg.Payload.Data["user_current"], &payloadItems); err != nil {
-		panic(err)
-	}
-
-	if len(payloadItems) == 0 {
+	if patchRaw, isPatch := fullMsg.Payload.Data["patch"]; isPatch {
+		if user.UserCurrentState == nil {
+			user.Logger.Warnf("user_current: received patch with no prior state — skipping")
+			return
+		}
+		patched, err := common.ApplyPatch(common.GetMapFromByte(user.UserCurrentState), patchRaw)
+		if err != nil {
+			user.Logger.Warnf("user_current: failed to apply patch: %v", err)
+			return
+		}
+		user.UserCurrentState = patched
+	} else if rawData, ok := fullMsg.Payload.Data["user_current"]; ok {
+		user.UserCurrentState = rawData
+	} else {
 		return
 	}
 
-	firstItem, ok := payloadItems[0].(map[string]interface{})
-	if !ok {
+	var items []map[string]interface{}
+	if err := json.Unmarshal(user.UserCurrentState, &items); err != nil {
+		user.Logger.Warnf("user_current: failed to parse state: %v", err)
 		return
 	}
+	if len(items) == 0 {
+		return
+	}
+	firstItem := items[0]
 
-	payloadBytes, _ := json.Marshal(firstItem)
-	user.Logger.Debug(string(payloadBytes))
+	wwa, _ := firstItem["whiteboardWriteAccess"].(bool)
+	if wwa != user.WhiteboardWriteAccess {
+		user.WhiteboardWriteAccess = wwa
+		user.Logger.Infof("whiteboardWriteAccess changed to %v", wwa)
+		if wwa && common.GetConfig().PublishCursor && !user.CursorPublishingActive {
+			user.CursorPublishingActive = true
+			go RunCursorPublisher(user)
+		}
+	}
 
 	joined, ok := firstItem["joined"].(bool)
 	if !ok || !joined || user.Joined {

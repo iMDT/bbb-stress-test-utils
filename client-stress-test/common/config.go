@@ -30,6 +30,7 @@ type Config struct {
 	UserJoinOrder                      string   `json:"userJoinOrder"`
 	CheckMeetingIdMismatch             bool     `json:"checkMeetingIdMismatch"`
 	ModeratorActions                   bool     `json:"moderatorActions"`
+	PublishCursor                      bool     `json:"publishCursor"`
 }
 
 var (
