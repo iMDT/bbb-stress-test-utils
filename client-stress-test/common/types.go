@@ -40,6 +40,9 @@ type User struct {
 	BenchmarkingMetrics map[string]interface{}
 	CreatedTime         time.Time
 	Problem             bool
+	IsModerator         bool
+	SeenUserIds         map[string]bool
 	MeetingId           string
-	SubscriptionNames   map[int]string // subscription message ID → GraphQL operationName
+	SubscriptionNames    map[int]string            // subscription message ID → GraphQL operationName
+	SubscriptionLastData map[int]map[string][]byte // subscription message ID → last known full payload.data per key
 }

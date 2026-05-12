@@ -1,17 +1,17 @@
 {
   "app_name": "BBB Client Stress test",
   "logLevel": "INFO",
-  "securitySalt": "onIyFnv7StXjG3aUgFpojRiXVKYjEq0ZDBlhfpL4kI",
+  "securitySalt": "ggT5fe10AYiSq4JYKOPSBzkh4Or7nML1cWfVwIh4KE",
   "bbbServerHost": "bbb30.bbb.imdt.dev",
   "bbbDockerContainerName": "bbb30",
-  "numOfUsers": 150,
+  "numOfUsers": 100,
   "benchmarkingEnabled": false,
   "minIntervalBetweenUserJoinInMs": 1000,
   "maxIntervalBetweenUserJoinInMs": 3000,
   "delayFirstUserJoinInSecs": 5,
   "delayToFinishTestSecs": 999,
   "sendSubscriptionsBatch": true,
-  "sendChatMessages": true,
+  "sendChatMessages": false,
   "intervalBetweenMessagesInMs": 250,
   "intervalBetweenBenchmarkUsersInSec": 10,
   "listOfMessages": [
@@ -25,6 +25,8 @@
   "userTimeToLive": 999,
   "method": "graphql",
   "timeout": 999,
-  "debug": true,
-  "userJoinOrder": "shuffle"
+  "userJoinOrder": "shuffle",
+  "checkMeetingIdMismatch": false,
+  "moderatorActions": false,
+  "debug": true
 }

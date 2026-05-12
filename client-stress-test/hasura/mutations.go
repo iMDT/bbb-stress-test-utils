@@ -146,6 +146,41 @@ func SendChatMessages(user *common.User) {
 	}
 }
 
+// SendSetRole sends a userSetRole mutation to promote targetUserId to role (e.g. "MODERATOR").
+func SendSetRole(user *common.User, targetUserId string) {
+	if user.WsConnectionClosed {
+		return
+	}
+	SendGenericGraphqlMessage(
+		user,
+		GetCurrMessageId(user),
+		map[string]interface{}{
+			"userId": targetUserId,
+			"role":   "MODERATOR",
+		},
+		"SetRole",
+		`mutation SetRole($userId: String!, $role: String!) {
+			userSetRole(userId: $userId, role: $role)
+		}`)
+}
+
+// SendSetPresenter sends a userSetPresenter mutation to make targetUserId the presenter.
+func SendSetPresenter(user *common.User, targetUserId string) {
+	if user.WsConnectionClosed {
+		return
+	}
+	SendGenericGraphqlMessage(
+		user,
+		GetCurrMessageId(user),
+		map[string]interface{}{
+			"userId": targetUserId,
+		},
+		"SetPresenter",
+		`mutation SetPresenter($userId: String!) {
+			userSetPresenter(userId: $userId)
+		}`)
+}
+
 // SendPeriodicChatMessage sends the next benchmarking chat message if the
 // previous one has already completed (PeriodicChatMessageMutationId == 0).
 func SendPeriodicChatMessage(user *common.User, messageId int) {

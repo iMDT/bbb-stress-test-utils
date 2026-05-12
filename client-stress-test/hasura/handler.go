@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -126,9 +127,17 @@ func handleNext(user *common.User, message []byte, msgId string, receivedSubscri
 		handleChatMessagePublic(user, message)
 	}
 
-	if id, err := strconv.Atoi(msgId); err == nil {
-		if opName, tracked := user.SubscriptionNames[id]; tracked && isMeetingIdValidationTarget(opName) {
-			validateSubscriptionMeetingIds(user, message, opName)
+	cfg := common.GetConfig()
+	if cfg.CheckMeetingIdMismatch || cfg.ModeratorActions {
+		if id, err := strconv.Atoi(msgId); err == nil {
+			if opName, tracked := user.SubscriptionNames[id]; tracked {
+				if isMeetingIdValidationTarget(opName) {
+					validateSubscriptionMeetingIds(user, message, id, opName, cfg.CheckMeetingIdMismatch)
+				}
+				if cfg.ModeratorActions && opName == "Patched_UserListSubscription" {
+					handleUserListForModerator(user, id)
+				}
+			}
 		}
 	}
 }
@@ -258,31 +267,137 @@ func isMeetingIdValidationTarget(operationName string) bool {
 
 // validateSubscriptionMeetingIds inspects every item returned in the "next"
 // payload and warns if any item's meetingId does not match the user's meeting.
+// When the payload contains a JSON patch instead of a full object, it applies
+// the patch to the previously stored state before validating.
 // Items without a meetingId field are silently skipped.
-func validateSubscriptionMeetingIds(user *common.User, message []byte, operationName string) {
+func validateSubscriptionMeetingIds(user *common.User, message []byte, subId int, operationName string, doCheck bool) {
 	var fullMsg hasuraMessage
 	if err := json.Unmarshal(message, &fullMsg); err != nil {
 		user.Logger.Warnf("[%s] failed to parse message for meetingId validation: %v", operationName, err)
 		return
 	}
 
+	patchRaw, isPatch := fullMsg.Payload.Data["patch"]
+
+	if isPatch {
+		// user.Logger.Infof("[%s] received JSON patch instead of full object, applying to stored state", operationName)
+
+		stored := user.SubscriptionLastData[subId]
+		if stored == nil {
+			user.Logger.Warnf("[%s] received patch but no prior full state is stored — skipping validation", operationName)
+			return
+		}
+
+		// Apply the patch to each stored data key (there should be exactly one).
+		for dataKey, storedBytes := range stored {
+			patched, err := common.ApplyPatch(common.GetMapFromByte(storedBytes), patchRaw)
+			if err != nil {
+				user.Logger.Warnf("[%s] failed to apply JSON patch to stored %s: %v", operationName, dataKey, err)
+				continue
+			}
+			// Update stored state with the patched result.
+			stored[dataKey] = patched
+			user.SubscriptionLastData[subId] = stored
+			if doCheck {
+				checkMeetingIds(user, operationName, dataKey, patched)
+			}
+		}
+		return
+	}
+
+	// Full object: store it and validate.
+	newStored := make(map[string][]byte)
 	for dataKey, rawData := range fullMsg.Payload.Data {
 		var items []map[string]interface{}
 		if err := json.Unmarshal(rawData, &items); err != nil {
 			continue // field is not an array (e.g. aggregate counts)
 		}
-
-		for _, item := range items {
-			receivedMeetingId, ok := item["meetingId"].(string)
-			if !ok {
-				continue // item has no meetingId field
-			}
-			if receivedMeetingId != user.MeetingId {
-				user.Logger.Warnf(
-					"[%s] meetingId mismatch in %s: got %q, expected %q",
-					operationName, dataKey, receivedMeetingId, user.MeetingId,
-				)
-			}
+		newStored[dataKey] = rawData
+		if doCheck {
+			checkMeetingIds(user, operationName, dataKey, rawData)
 		}
+	}
+	if len(newStored) > 0 {
+		user.SubscriptionLastData[subId] = newStored
+	}
+}
+
+// handleUserListForModerator inspects the latest stored state of
+// Patched_UserListSubscription and, for any user ID not yet seen, randomly
+// schedules a role or presenter promotion from the moderator.
+//
+// It must be called after validateSubscriptionMeetingIds so that
+// SubscriptionLastData[subId] already reflects any patches.
+func handleUserListForModerator(user *common.User, subId int) {
+	if !user.IsModerator {
+		return
+	}
+
+	stored := user.SubscriptionLastData[subId]
+	if stored == nil {
+		return
+	}
+
+	rawData, ok := stored["user"]
+	if !ok {
+		return
+	}
+
+	var users []map[string]interface{}
+	if err := json.Unmarshal(rawData, &users); err != nil {
+		return
+	}
+
+	for _, u := range users {
+		uid, ok := u["userId"].(string)
+		if !ok || uid == "" || uid == user.UserId {
+			continue
+		}
+		if user.SeenUserIds[uid] {
+			continue
+		}
+		user.SeenUserIds[uid] = true
+
+		targetId := uid
+		roll := rand.Intn(100)
+		switch {
+		case roll < 20: // ~20% — give presenter after 40s
+			go func() {
+				time.Sleep(40 * time.Second)
+				user.Logger.Infof("Giving presenter to %s", targetId)
+				SendSetPresenter(user, targetId)
+			}()
+		case roll < 60: // ~40% — promote to moderator after 30s
+			go func() {
+				time.Sleep(30 * time.Second)
+				user.Logger.Infof("Setting %s as moderator", targetId)
+				SendSetRole(user, targetId)
+			}()
+		// remaining ~40%: no action
+		}
+	}
+}
+
+// checkMeetingIds iterates over items in rawData (a JSON array) and logs any
+// meetingId that does not match the user's expected meeting.
+func checkMeetingIds(user *common.User, operationName, dataKey string, rawData []byte) {
+	var items []map[string]interface{}
+	if err := json.Unmarshal(rawData, &items); err != nil {
+		return
+	}
+	for _, item := range items {
+		receivedMeetingId, ok := item["meetingId"].(string)
+		if !ok {
+			continue
+		}
+		if receivedMeetingId != user.MeetingId {
+			common.LogMeetingIdMismatch(user.UserId, operationName, dataKey, receivedMeetingId, user.MeetingId)
+		}
+
+		// receivedUserName, ok := item["name"].(string)
+		// if !ok {
+		// 	continue
+		// }
+		// user.Logger.Infof("[%s] received JSON patch instead of full object, applying to stored state", receivedUserName)
 	}
 }

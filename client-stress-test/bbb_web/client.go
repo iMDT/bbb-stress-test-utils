@@ -28,6 +28,7 @@ func RequestApiCreate(client *http.Client) string {
 	extMeetingId := "test-" + common.GetRandomIntegerAsString()
 	controller := "create"
 	params := "attendeePW=ap&meetingID=" + extMeetingId + "&moderatorPW=mp&name=" + extMeetingId + "&voiceBridge=" + voiceBridge + "&welcome=Heeyyy"
+	params = params + "&multiUserWhiteboardEnabled=true"
 
 	createUrl := common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
 
@@ -86,10 +87,10 @@ func GenerateJoinUrl(meetingId string, name string, redirect string, moderator b
 	return common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
 }
 
-func RequestApiJoin(client *http.Client, meetingId string, name string) (string, string, string, []*http.Cookie) {
+func RequestApiJoin(client *http.Client, meetingId string, name string, moderator bool) (string, string, string, []*http.Cookie) {
 	// log := log.WithField("_routine", "bbb_web_client")
 
-	respJoin, err := client.Get(GenerateJoinUrl(meetingId, name, "false", false))
+	respJoin, err := client.Get(GenerateJoinUrl(meetingId, name, "false", moderator))
 	if err != nil {
 		log.WithField("user", name).Fatal(err)
 	}

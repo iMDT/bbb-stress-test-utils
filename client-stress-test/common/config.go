@@ -28,6 +28,8 @@ type Config struct {
 	BenchmarkingEnabled                bool     `json:"benchmarkingEnabled"`
 	Debug                              bool     `json:"debug"`
 	UserJoinOrder                      string   `json:"userJoinOrder"`
+	CheckMeetingIdMismatch             bool     `json:"checkMeetingIdMismatch"`
+	ModeratorActions                   bool     `json:"moderatorActions"`
 }
 
 var (

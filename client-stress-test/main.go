@@ -114,8 +114,8 @@ func main() {
 	startedAt := time.Now()
 	users := buildUserList(config.NumOfUsers, config.UserJoinOrder)
 
-	for _, name := range users {
-		go addNewUser(meetingId, name, false)
+	for i, name := range users {
+		go addNewUser(meetingId, name, false, i == 0)
 		delay := rand.Intn(config.MaxIntervalBetweenUserJoinInMs-config.MinIntervalBetweenUserJoinInMs+1) + config.MinIntervalBetweenUserJoinInMs
 		time.Sleep(time.Duration(delay) * time.Millisecond)
 	}
@@ -184,7 +184,7 @@ func runBenchmarkingUsers(meetingId string) {
 
 	currUser := 1
 	for {
-		go addNewUser(meetingId, fmt.Sprintf("Benchmarking %02d", currUser), true)
+		go addNewUser(meetingId, fmt.Sprintf("Benchmarking %02d", currUser), true, false)
 		currUser++
 		time.Sleep(time.Duration(common.GetConfig().IntervalBetweenBenchmarkUsersInSec) * time.Second)
 
@@ -194,11 +194,11 @@ func runBenchmarkingUsers(meetingId string) {
 	}
 }
 
-func addNewUser(meetingId, name string, benchmarking bool) {
+func addNewUser(meetingId, name string, benchmarking bool, moderator bool) {
 	jar, _ := cookiejar.New(nil)
 	newClient := &http.Client{Jar: jar}
 
-	userId, sessionToken, authToken, apiCookie := bbb_web.RequestApiJoin(newClient, meetingId, name)
+	userId, sessionToken, authToken, apiCookie := bbb_web.RequestApiJoin(newClient, meetingId, name, moderator)
 	if userId == "" {
 		log.Errorf("Could not add user %s", name)
 		return
@@ -222,8 +222,11 @@ func addNewUser(meetingId, name string, benchmarking bool) {
 			Logger:              log.WithField("user", name),
 			Benchmarking:        benchmarking,
 			BenchmarkingMetrics: make(map[string]interface{}),
+			IsModerator:         moderator,
+			SeenUserIds:         make(map[string]bool),
 			MeetingId:           meetingId,
-			SubscriptionNames:   make(map[int]string),
+			SubscriptionNames:    make(map[int]string),
+			SubscriptionLastData: make(map[int]map[string][]byte),
 		}
 		common.AddUser()
 
