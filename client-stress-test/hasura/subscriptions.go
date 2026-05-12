@@ -14,9 +14,21 @@ import (
 )
 
 var (
-	subscriptions           []string
-	userCurrentSubscription string
+	subscriptions                []string
+	pageIdDependentSubscriptions []string
+	userCurrentSubscription      string
+
+	rePageIdValue = regexp.MustCompile(`"pageId"\s*:\s*"[^"]*"`)
 )
+
+// pageIdParamMarker matches the GraphQL operation declaration when a query
+// takes a pageId variable, e.g. `query Foo($pageId: String!)`.
+const pageIdParamMarker = "$pageId: String!"
+
+// currentPresentationPagesOpName is the operation name of the subscription
+// that publishes the current presentation page; the pageId it returns feeds
+// the subscriptions in pageIdDependentSubscriptions.
+const currentPresentationPagesOpName = "CurrentPresentationPagesSubscription"
 
 func init() {
 	ReadSubscriptions()
@@ -45,10 +57,15 @@ func ReadSubscriptions() {
 		}
 
 		count++
-		if strings.Contains(string(content), "Patched_userCurrentSubscription") {
-			userCurrentSubscription = string(content)
-		} else {
-			subscriptions = append(subscriptions, string(content))
+		s := string(content)
+		switch {
+		case strings.Contains(s, "Patched_userCurrentSubscription"):
+			userCurrentSubscription = s
+		case strings.Contains(s, pageIdParamMarker):
+			// Defer: needs a pageId from CurrentPresentationPagesSubscription.
+			pageIdDependentSubscriptions = append(pageIdDependentSubscriptions, s)
+		default:
+			subscriptions = append(subscriptions, s)
 		}
 		return nil
 	})
@@ -111,6 +128,10 @@ func SendSubscriptionsBatch(user *common.User) {
 		msgId := GetCurrMessageId(user)
 		recordSubscriptionName(user, msgId, v)
 
+		if strings.Contains(v, currentPresentationPagesOpName) {
+			user.CurrentPresentationPagesSubscriptionId = msgId
+		}
+
 		text := reQueryId.ReplaceAllString(v, fmt.Sprintf(`"id":"%d"`, msgId))
 		text = reUserId.ReplaceAllString(text, fmt.Sprintf(`"userId":"%s"`, user.UserId))
 
@@ -124,5 +145,56 @@ func SendSubscriptionsBatch(user *common.User) {
 			return
 		}
 		common.AddSubscriptionSent()
+	}
+}
+
+// SendPageIdDependentSubscriptions sends the subscriptions that take a pageId
+// variable, substituting the pageId discovered from
+// CurrentPresentationPagesSubscription. The caller is responsible for
+// cancelling any previously-active deferred subscriptions before invoking
+// this with a new pageId (see SendSubscriptionComplete).
+func SendPageIdDependentSubscriptions(user *common.User, pageId string) {
+	if pageId == "" {
+		return
+	}
+	user.CurrentPageId = pageId
+	user.ActivePageIdSubMsgIds = user.ActivePageIdSubMsgIds[:0]
+
+	reQueryId := regexp.MustCompile(`"id":"[\d\w\-]+"`)
+	reUserId := regexp.MustCompile(`"userId":"\d+"`)
+	pageIdReplacement := fmt.Sprintf(`"pageId":"%s"`, pageId)
+
+	for _, v := range pageIdDependentSubscriptions {
+		msgId := GetCurrMessageId(user)
+		recordSubscriptionName(user, msgId, v)
+
+		text := reQueryId.ReplaceAllString(v, fmt.Sprintf(`"id":"%d"`, msgId))
+		text = reUserId.ReplaceAllString(text, fmt.Sprintf(`"userId":"%s"`, user.UserId))
+		text = rePageIdValue.ReplaceAllString(text, pageIdReplacement)
+
+		user.Logger.Debugf("Sending pageId-dependent %s", strings.ReplaceAll(text, "\n", " ")[:60])
+
+		user.WsConnectionMutex.Lock()
+		err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(text))
+		user.WsConnectionMutex.Unlock()
+		if err != nil {
+			user.Logger.Println("write error (pageId-dependent subscriptions):", err)
+			return
+		}
+		user.ActivePageIdSubMsgIds = append(user.ActivePageIdSubMsgIds, msgId)
+		common.AddSubscriptionSent()
+	}
+}
+
+// SendSubscriptionComplete sends a graphql-ws "complete" frame to cancel an
+// active subscription identified by msgId.
+func SendSubscriptionComplete(user *common.User, msgId int) {
+	payload := fmt.Sprintf(`{"id":"%d","type":"complete"}`, msgId)
+
+	user.WsConnectionMutex.Lock()
+	err := user.WsConnection.WriteMessage(websocket.TextMessage, []byte(payload))
+	user.WsConnectionMutex.Unlock()
+	if err != nil {
+		user.Logger.Println("write error (complete):", err)
 	}
 }

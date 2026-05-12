@@ -123,6 +123,11 @@ func handleNext(user *common.User, message []byte, msgId string, receivedSubscri
 		handleUserCurrentData(user, message)
 	}
 
+	if user.CurrentPresentationPagesSubscriptionId != 0 &&
+		msgId == strconv.Itoa(user.CurrentPresentationPagesSubscriptionId) {
+		handleCurrentPresentationPagesData(user, message)
+	}
+
 	if bytes.Contains(message, []byte("chat_message_public")) {
 		handleChatMessagePublic(user, message)
 	}
@@ -199,6 +204,74 @@ func handleUserCurrentData(user *common.User, message []byte) {
 	if !user.Benchmarking {
 		SendChatMessages(user)
 	}
+}
+
+// handleCurrentPresentationPagesData keeps user.PresPageCurrState in sync with
+// the latest pres_page_curr state (full objects or JSON patches) and, whenever
+// the current pageId changes, cancels any active pageId-dependent
+// subscriptions and resubscribes them with the new pageId.
+func handleCurrentPresentationPagesData(user *common.User, message []byte) {
+	var fullMsg hasuraMessage
+	if err := json.Unmarshal(message, &fullMsg); err != nil {
+		user.Logger.Warnf("failed to parse CurrentPresentationPagesSubscription data: %v", err)
+		return
+	}
+
+	if patchRaw, isPatch := fullMsg.Payload.Data["patch"]; isPatch {
+		if user.PresPageCurrState == nil {
+			user.Logger.Warnf("CurrentPresentationPagesSubscription: received patch with no prior state — skipping")
+			return
+		}
+		patched, err := common.ApplyPatch(common.GetMapFromByte(user.PresPageCurrState), patchRaw)
+		if err != nil {
+			user.Logger.Warnf("CurrentPresentationPagesSubscription: failed to apply patch: %v", err)
+			return
+		}
+		user.PresPageCurrState = patched
+	} else if rawData, ok := fullMsg.Payload.Data["pres_page_curr"]; ok {
+		user.PresPageCurrState = rawData
+	} else {
+		return
+	}
+
+	newPageId := extractCurrentPageId(user.PresPageCurrState)
+	if newPageId == "" || newPageId == user.CurrentPageId {
+		return
+	}
+
+	if user.CurrentPageId == "" {
+		user.Logger.Infof("Got pageId from CurrentPresentationPagesSubscription: %s", newPageId)
+	} else {
+		user.Logger.Infof("pageId changed: %s -> %s, cancelling old subs and resubscribing", user.CurrentPageId, newPageId)
+		for _, id := range user.ActivePageIdSubMsgIds {
+			SendSubscriptionComplete(user, id)
+		}
+	}
+
+	SendPageIdDependentSubscriptions(user, newPageId)
+}
+
+// extractCurrentPageId pulls the pageId of the current page out of a
+// pres_page_curr JSON array. It prefers an entry with isCurrentPage: true; if
+// none has the flag set, it falls back to the first entry's pageId.
+func extractCurrentPageId(rawData []byte) string {
+	var items []map[string]interface{}
+	if err := json.Unmarshal(rawData, &items); err != nil {
+		return ""
+	}
+	for _, item := range items {
+		if isCurrent, _ := item["isCurrentPage"].(bool); isCurrent {
+			if pid, ok := item["pageId"].(string); ok && pid != "" {
+				return pid
+			}
+		}
+	}
+	for _, item := range items {
+		if pid, ok := item["pageId"].(string); ok && pid != "" {
+			return pid
+		}
+	}
+	return ""
 }
 
 func handleChatMessagePublic(user *common.User, message []byte) {

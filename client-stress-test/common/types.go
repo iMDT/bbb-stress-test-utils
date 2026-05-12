@@ -45,4 +45,9 @@ type User struct {
 	MeetingId           string
 	SubscriptionNames    map[int]string            // subscription message ID → GraphQL operationName
 	SubscriptionLastData map[int]map[string][]byte // subscription message ID → last known full payload.data per key
+
+	CurrentPresentationPagesSubscriptionId int    // msgId of CurrentPresentationPagesSubscription, used to detect when pageId data arrives
+	CurrentPageId                          string // pageId currently used in the active pageId-dependent subscriptions
+	PresPageCurrState                      []byte // last known pres_page_curr JSON array, kept in sync by applying patches
+	ActivePageIdSubMsgIds                  []int  // msgIds of currently active pageId-dependent subscriptions; used to cancel on page change
 }
