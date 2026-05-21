@@ -31,6 +31,7 @@ type Config struct {
 	CheckMeetingIdMismatch             bool     `json:"checkMeetingIdMismatch"`
 	ModeratorActions                   bool     `json:"moderatorActions"`
 	PublishCursor                      bool     `json:"publishCursor"`
+	PublishAnnotations                 bool     `json:"publishAnnotations"`
 }
 
 var (

@@ -54,4 +54,12 @@ type User struct {
 	UserCurrentState       []byte // last known user_current JSON array, kept in sync by applying patches
 	WhiteboardWriteAccess  bool   // mirrors user_current[0].whiteboardWriteAccess
 	CursorPublishingActive bool   // true while a cursor-publishing goroutine is running for this user
+
+	CursorX float64 // last cursor x position (absolute whiteboard coords); shared with annotation publisher
+	CursorY float64 // last cursor y position (absolute whiteboard coords); shared with annotation publisher
+
+	AnnotationPublishingActive bool                              // true while an annotation-publishing goroutine is running for this user
+	Annotations                map[string]map[string]interface{} // shapeId → annotationInfo, used to re-send on move
+	AnnotationsOrder           []string                          // shape IDs in insertion order, for random pick + capped removal
+	AnnotationIndex            int                               // running counter used to assign tldraw `index` ("a1", "a2", …)
 }

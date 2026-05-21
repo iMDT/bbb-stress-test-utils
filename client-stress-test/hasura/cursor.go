@@ -52,8 +52,12 @@ func RunCursorPublisher(user *common.User) {
 	user.Logger.Infoln("Cursor publisher started")
 
 	// Persist position across bursts so the cursor reappears near where it left off.
-	x := cursorMinX + rand.Float64()*(cursorMaxX-cursorMinX)
-	y := cursorMinY + rand.Float64()*(cursorMaxY-cursorMinY)
+	// CursorX/Y is shared with the annotation publisher, so any in-progress shape
+	// "originates" exactly where the cursor currently is.
+	if user.CursorX == 0 && user.CursorY == 0 {
+		user.CursorX = cursorMinX + rand.Float64()*(cursorMaxX-cursorMinX)
+		user.CursorY = cursorMinY + rand.Float64()*(cursorMaxY-cursorMinY)
+	}
 
 	for {
 		if !user.WhiteboardWriteAccess || user.WsConnectionClosed {
@@ -87,9 +91,9 @@ func RunCursorPublisher(user *common.User) {
 				continue
 			}
 
-			x = clamp(x+(rand.Float64()*2-1)*cursorMaxStep, cursorMinX, cursorMaxX)
-			y = clamp(y+(rand.Float64()*2-1)*cursorMaxStep, cursorMinY, cursorMaxY)
-			SendPresentationPublishCursor(user, whiteboardId, x, y)
+			user.CursorX = clamp(user.CursorX+(rand.Float64()*2-1)*cursorMaxStep, cursorMinX, cursorMaxX)
+			user.CursorY = clamp(user.CursorY+(rand.Float64()*2-1)*cursorMaxStep, cursorMinY, cursorMaxY)
+			SendPresentationPublishCursor(user, whiteboardId, user.CursorX, user.CursorY)
 			time.Sleep(time.Duration(cursorMinIntervalMs+rand.Intn(cursorMaxJitterMs+1)) * time.Millisecond)
 		}
 

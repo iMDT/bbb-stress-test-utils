@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 
 	"bbb-stress-test/common"
 
@@ -27,7 +28,7 @@ func RequestApiCreate(client *http.Client) string {
 	voiceBridge := common.GetRandomIntegerAsString()
 	extMeetingId := "test-" + common.GetRandomIntegerAsString()
 	controller := "create"
-	params := "attendeePW=ap&meetingID=" + extMeetingId + "&moderatorPW=mp&name=" + extMeetingId + "&voiceBridge=" + voiceBridge + "&welcome=Heeyyy"
+	params := "attendeePW=Xagp0MTT&meetingID=" + extMeetingId + "&moderatorPW=J6ImRc6n&name=" + extMeetingId + "&voiceBridge=" + voiceBridge + "&welcome=Heeyyy"
 	params = params + "&multiUserWhiteboardEnabled=true"
 
 	createUrl := common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
@@ -62,6 +63,65 @@ func RequestApiCreate(client *http.Client) string {
 	return objCreateResponse.InternalMeetingID
 }
 
+type GetMeetingInfoResponse struct {
+	XMLName     xml.Name `xml:"response"`
+	Returncode  string   `xml:"returncode"`
+	Message     string   `xml:"message"`
+	MeetingID   string   `xml:"meetingID"`
+	AttendeePW  string   `xml:"attendeePW"`
+	ModeratorPW string   `xml:"moderatorPW"`
+}
+
+type meetingPasswords struct {
+	attendee  string
+	moderator string
+}
+
+var passwordCache sync.Map
+
+func RequestApiGetMeetingInfo(client *http.Client, meetingId string) (string, string) {
+	controller := "getMeetingInfo"
+	params := "meetingID=" + meetingId
+	infoUrl := common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
+
+	resp, err := client.Get(infoUrl)
+	if err != nil {
+		log.Errorf("Error calling getMeetingInfo: %v", err)
+		return "", ""
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("Error reading getMeetingInfo response: %v", err)
+		return "", ""
+	}
+
+	var info GetMeetingInfoResponse
+	if err := xml.Unmarshal(body, &info); err != nil {
+		log.Errorf("Error parsing getMeetingInfo XML: %v", err)
+		return "", ""
+	}
+
+	if info.Returncode != "SUCCESS" {
+		log.Errorf("getMeetingInfo failed: %s", info.Message)
+		return "", ""
+	}
+
+	return info.AttendeePW, info.ModeratorPW
+}
+
+// GetMeetingPasswords returns (attendeePW, moderatorPW) for the given meeting,
+// fetching them via getMeetingInfo on first call and caching the result.
+func GetMeetingPasswords(client *http.Client, meetingId string) (string, string) {
+	if v, ok := passwordCache.Load(meetingId); ok {
+		p := v.(meetingPasswords)
+		return p.attendee, p.moderator
+	}
+	attendeePW, moderatorPW := RequestApiGetMeetingInfo(client, meetingId)
+	passwordCache.Store(meetingId, meetingPasswords{attendee: attendeePW, moderator: moderatorPW})
+	return attendeePW, moderatorPW
+}
+
 type JoinResponse struct {
 	XMLName      xml.Name `xml:"response"`
 	Returncode   string   `xml:"returncode"`
@@ -72,16 +132,10 @@ type JoinResponse struct {
 	Url          string   `xml:"url"`
 }
 
-func GenerateJoinUrl(meetingId string, name string, redirect string, moderator bool) string {
+func GenerateJoinUrl(meetingId string, name string, redirect string, password string) string {
 	controller := "join"
 	name = strings.Replace(name, " ", "+", -1)
-	params := ""
-	if moderator == true {
-		params = "fullName=" + name + "&meetingID=" + meetingId + "&password=mp&redirect=" + redirect
-	} else {
-		params = "fullName=" + name + "&meetingID=" + meetingId + "&password=ap&redirect=" + redirect
-	}
-
+	params := "fullName=" + name + "&meetingID=" + meetingId + "&password=" + password + "&redirect=" + redirect
 	params = params + "&userdata-bbb_client_title=" + name
 
 	return common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
@@ -90,7 +144,13 @@ func GenerateJoinUrl(meetingId string, name string, redirect string, moderator b
 func RequestApiJoin(client *http.Client, meetingId string, name string, moderator bool) (string, string, string, []*http.Cookie) {
 	// log := log.WithField("_routine", "bbb_web_client")
 
-	respJoin, err := client.Get(GenerateJoinUrl(meetingId, name, "false", moderator))
+	attendeePW, moderatorPW := GetMeetingPasswords(client, meetingId)
+	password := attendeePW
+	if moderator {
+		password = moderatorPW
+	}
+
+	respJoin, err := client.Get(GenerateJoinUrl(meetingId, name, "false", password))
 	if err != nil {
 		log.WithField("user", name).Fatal(err)
 	}

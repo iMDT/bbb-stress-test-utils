@@ -90,15 +90,17 @@ func main() {
 		logger.Info("Created meeting: ", meetingId)
 	}
 
+	attendeePW, moderatorPW := bbb_web.GetMeetingPasswords(client, meetingId)
+
 	fmt.Println()
 	fmt.Println("--------------------------------------------------")
 	fmt.Println("Join links:")
 	fmt.Println()
 	fmt.Println("MODERATOR:")
-	fmt.Println(bbb_web.GenerateJoinUrl(meetingId, "Teacher", "true", true))
+	fmt.Println(bbb_web.GenerateJoinUrl(meetingId, "Teacher", "true", moderatorPW))
 	fmt.Println()
 	fmt.Println("STUDENT:")
-	fmt.Println(bbb_web.GenerateJoinUrl(meetingId, "Student 00089", "true", false))
+	fmt.Println(bbb_web.GenerateJoinUrl(meetingId, "Student 00089", "true", attendeePW))
 	fmt.Println("--------------------------------------------------")
 	fmt.Println()
 
@@ -227,6 +229,7 @@ func addNewUser(meetingId, name string, benchmarking bool, moderator bool) {
 			MeetingId:           meetingId,
 			SubscriptionNames:    make(map[int]string),
 			SubscriptionLastData: make(map[int]map[string][]byte),
+			Annotations:          make(map[string]map[string]interface{}),
 		}
 		common.AddUser()
 

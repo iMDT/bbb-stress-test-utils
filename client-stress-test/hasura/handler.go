@@ -195,6 +195,10 @@ func handleUserCurrentData(user *common.User, message []byte) {
 			user.CursorPublishingActive = true
 			go RunCursorPublisher(user)
 		}
+		if wwa && common.GetConfig().PublishAnnotations && !user.AnnotationPublishingActive {
+			user.AnnotationPublishingActive = true
+			go RunAnnotationsPublisher(user)
+		}
 	}
 
 	joined, ok := firstItem["joined"].(bool)
@@ -260,9 +264,9 @@ func handleCurrentPresentationPagesData(user *common.User, message []byte) {
 	}
 
 	if user.CurrentPageId == "" {
-		user.Logger.Infof("Got pageId from CurrentPresentationPagesSubscription: %s", newPageId)
+		user.Logger.Debugf("Got pageId from CurrentPresentationPagesSubscription: %s", newPageId)
 	} else {
-		user.Logger.Infof("pageId changed: %s -> %s, cancelling old subs and resubscribing", user.CurrentPageId, newPageId)
+		user.Logger.Debugf("pageId changed: %s -> %s, cancelling old subs and resubscribing", user.CurrentPageId, newPageId)
 		for _, id := range user.ActivePageIdSubMsgIds {
 			SendSubscriptionComplete(user, id)
 		}
@@ -466,7 +470,7 @@ func handleUserListForModerator(user *common.User, subId int) {
 				user.Logger.Infof("Setting %s as moderator", targetId)
 				SendSetRole(user, targetId)
 			}()
-		// remaining ~40%: no action
+			// remaining ~40%: no action
 		}
 	}
 }
