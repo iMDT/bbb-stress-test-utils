@@ -41,6 +41,11 @@ type User struct {
 	CreatedTime         time.Time
 	Problem             bool
 	IsModerator         bool
+	CurrentIsModerator  bool // live role from user_current (covers users promoted during the test)
+	HandRaised          bool   // set by the raise-hand coordinator
+	Presenter           bool   // from user_current, used to replicate user list ordering
+	NameSortable        string // from user_current, used to replicate user list ordering
+	RegisteredAt        string // from user_current, used to replicate user list ordering
 	SeenUserIds         map[string]bool
 	MeetingId           string
 	SubscriptionNames    map[int]string            // subscription message ID → GraphQL operationName

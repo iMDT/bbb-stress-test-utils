@@ -30,5 +30,30 @@
   "moderatorActions": false,
   "publishCursor": true,
   "publishAnnotations": true,
-  "debug": true
+  "debug": true,
+  "raiseHand": {
+    "enabled": true,
+    "raiseIntervalSecs": 30,
+    "lowerIntervalSecs": 60
+  },
+  "reactions": {
+    "enabled": true,
+    "intervalSecs": 60,
+    "delayBetweenGroupsMs": 3000,
+    "groups": [
+      {
+        "emoji": "👏",
+        "percent": 10
+      },
+      {
+        "emoji": "😃",
+        "percent": 10
+      },
+      {
+        "emoji": "👍",
+        "percent": 10
+      }
+    ]
+  },
+  "multiUserWhiteboardEnabled": true
 }

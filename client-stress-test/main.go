@@ -113,6 +113,8 @@ func main() {
 
 	time.Sleep(time.Duration(config.DelayFirstUserJoinInSecs) * time.Second)
 
+	hasura.StartInteractionCoordinators()
+
 	startedAt := time.Now()
 	users := buildUserList(config.NumOfUsers, config.UserJoinOrder)
 

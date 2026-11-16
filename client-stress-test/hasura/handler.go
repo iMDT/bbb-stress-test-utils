@@ -201,6 +201,19 @@ func handleUserCurrentData(user *common.User, message []byte) {
 		}
 	}
 
+	if isMod, ok := firstItem["isModerator"].(bool); ok {
+		user.CurrentIsModerator = isMod
+	}
+	if p, ok := firstItem["presenter"].(bool); ok {
+		user.Presenter = p
+	}
+	if ns, ok := firstItem["nameSortable"].(string); ok {
+		user.NameSortable = ns
+	}
+	if ra, ok := firstItem["registeredAt"]; ok && ra != nil {
+		user.RegisteredAt = fmt.Sprint(ra)
+	}
+
 	joined, ok := firstItem["joined"].(bool)
 	if !ok || !joined || user.Joined {
 		return
@@ -216,6 +229,7 @@ func handleUserCurrentData(user *common.User, message []byte) {
 
 	if !user.Benchmarking {
 		common.AddJoinedUser()
+		RegisterJoinedUser(user)
 	}
 
 	if user.Benchmarking {

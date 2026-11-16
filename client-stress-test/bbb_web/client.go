@@ -29,7 +29,9 @@ func RequestApiCreate(client *http.Client) string {
 	extMeetingId := "test-" + common.GetRandomIntegerAsString()
 	controller := "create"
 	params := "attendeePW=Xagp0MTT&meetingID=" + extMeetingId + "&moderatorPW=J6ImRc6n&name=" + extMeetingId + "&voiceBridge=" + voiceBridge + "&welcome=Heeyyy"
-	params = params + "&multiUserWhiteboardEnabled=true"
+	if common.GetConfig().IsMultiUserWhiteboardEnabled() {
+		params = params + "&multiUserWhiteboardEnabled=true"
+	}
 
 	createUrl := common.GetApiUrl() + "/" + controller + "?" + params + "&checksum=" + common.GetSha1sum(controller+params+common.GetSalt())
 

@@ -24,6 +24,18 @@ Or inform them as parameter when calling the application.
   - `./bbb-stress-test --meetingId=abc123def456`
 
   
+### Simulated interactions (config.json)
+All of them are deterministic, so every run produces the same load:
+- `raiseHand`: every `raiseIntervalSecs` the **last viewer in the user list** (with hand down)
+  raises the hand; every `lowerIntervalSecs` the moderator lowers the oldest raised hand.
+- `reactions`: every `intervalSecs` the users at the **end of the user list** react, one group
+  per entry of `groups` (`percent` of the meeting users each), `delayBetweenGroupsMs` apart.
+- `multiUserWhiteboardEnabled` (default `true`): when `false` only the presenter can draw, so
+  `publishCursor`/`publishAnnotations` do not make every viewer draw (realistic meeting).
+
+The user list order is replicated locally (presenter, role, whiteboard access, name), since
+the moderator's `Patched_UserListSubscription` only returns the first 50 users.
+
 ## Build
 `./build.sh`
 

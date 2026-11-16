@@ -32,6 +32,38 @@ type Config struct {
 	ModeratorActions                   bool     `json:"moderatorActions"`
 	PublishCursor                      bool     `json:"publishCursor"`
 	PublishAnnotations                 bool     `json:"publishAnnotations"`
+	MultiUserWhiteboardEnabled         *bool           `json:"multiUserWhiteboardEnabled"` // default true; false = only the presenter draws
+	RaiseHand                          RaiseHandConfig `json:"raiseHand"`
+	Reactions                          ReactionsConfig `json:"reactions"`
+}
+
+// IsMultiUserWhiteboardEnabled defaults to true (previous hardcoded behavior).
+func (c Config) IsMultiUserWhiteboardEnabled() bool {
+	return c.MultiUserWhiteboardEnabled == nil || *c.MultiUserWhiteboardEnabled
+}
+
+// RaiseHandConfig: every RaiseIntervalSecs the last viewer in the user list
+// (with hand down) raises their hand; every LowerIntervalSecs the moderator
+// lowers the hand raised the longest.
+type RaiseHandConfig struct {
+	Enabled           bool `json:"enabled"`
+	RaiseIntervalSecs int  `json:"raiseIntervalSecs"`
+	LowerIntervalSecs int  `json:"lowerIntervalSecs"`
+}
+
+// ReactionsConfig: every IntervalSecs the users at the end of the user list
+// react, one group per emoji (Percent of the meeting's users each), groups sent
+// DelayBetweenGroupsMs apart.
+type ReactionsConfig struct {
+	Enabled              bool            `json:"enabled"`
+	IntervalSecs         int             `json:"intervalSecs"`
+	DelayBetweenGroupsMs int             `json:"delayBetweenGroupsMs"`
+	Groups               []ReactionGroup `json:"groups"`
+}
+
+type ReactionGroup struct {
+	Emoji   string `json:"emoji"`
+	Percent int    `json:"percent"`
 }
 
 var (
