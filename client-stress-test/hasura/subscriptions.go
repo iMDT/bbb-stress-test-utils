@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -19,6 +20,12 @@ var (
 	userCurrentSubscription      string
 
 	rePageIdValue = regexp.MustCompile(`"pageId"\s*:\s*"[^"]*"`)
+	// Streaming cursors captured in the dump ("updatedAt" of annotationHistoryStream)
+	// are timestamps of the dump session. The real client starts the stream at the
+	// newest annotation it already loaded (or the meeting creation time), i.e. it
+	// only receives the delta. Re-sending the dumped timestamp would make every
+	// simulated user replay the whole page history.
+	reUpdatedAtValue = regexp.MustCompile(`"updatedAt"\s*:\s*"[^"]*"`)
 )
 
 // pageIdParamMarker matches the GraphQL operation declaration when a query
@@ -171,6 +178,8 @@ func SendPageIdDependentSubscriptions(user *common.User, pageId string) {
 		text := reQueryId.ReplaceAllString(v, fmt.Sprintf(`"id":"%d"`, msgId))
 		text = reUserId.ReplaceAllString(text, fmt.Sprintf(`"userId":"%s"`, user.UserId))
 		text = rePageIdValue.ReplaceAllString(text, pageIdReplacement)
+		text = reUpdatedAtValue.ReplaceAllString(text,
+			fmt.Sprintf(`"updatedAt":"%s"`, time.Now().UTC().Format("2006-01-02T15:04:05.000Z")))
 
 		user.Logger.Debugf("Sending pageId-dependent %s", strings.ReplaceAll(text, "\n", " ")[:60])
 
