@@ -1,0 +1,1 @@
+{"id":"2d3b9884-e392-483e-9759-dd32d05ab793","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"getMeetingRecordingData","query":"subscription getMeetingRecordingData {\n  meeting_recording {\n    isRecording\n    startedAt\n    startedBy\n    previousRecordedTimeInSeconds\n    __typename\n  }\n}"}}

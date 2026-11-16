@@ -1,0 +1,1 @@
+{"id":"7046d6c4-ea0f-4ea5-b736-cb2498a5b5eb","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"IsTyping","query":"subscription IsTyping {\n  user_typing_public(order_by: {startedTypingAt: asc}, limit: 4) {\n    chatId\n    userId\n    user {\n      name\n      __typename\n    }\n    __typename\n  }\n}"}}

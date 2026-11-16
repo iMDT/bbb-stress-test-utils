@@ -1,0 +1,1 @@
+{"id":"5383c161-79cc-4b7c-b722-cd1a0f912f8d","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"UserCurrent","query":"subscription UserCurrent {\n  user_current {\n    voice {\n      muted\n      talking\n      joined\n      listenOnly\n      listenOnlyInputDevice\n      __typename\n    }\n    __typename\n  }\n}"}}

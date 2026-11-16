@@ -1,0 +1,1 @@
+{"id":"c4a72699-fe89-4904-84ad-bdf778c30241","type":"subscribe","payload":{"variables":{"pluginName":"GenericLinkShare"},"extensions":{},"operationName":"pluginSettingsSubscription","query":"subscription pluginSettingsSubscription($pluginName: String!) {\n  meeting_clientPluginSettings(where: {name: {_eq: $pluginName}}) {\n    settings\n    __typename\n  }\n}"}}

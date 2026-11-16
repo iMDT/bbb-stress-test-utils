@@ -1,0 +1,1 @@
+{"id":"efaa2fb3-4911-4ae1-8865-6fee749ee8a1","type":"subscribe","payload":{"variables":{"externalId":"notes"},"extensions":{},"operationName":"GetNotesLastUpdatedAt","query":"subscription GetNotesLastUpdatedAt($externalId: String!) {\n  sharedNotes(where: {sharedNotesExtId: {_eq: $externalId}}) {\n    lastUpdatedAt\n    __typename\n  }\n}"}}

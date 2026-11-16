@@ -1,0 +1,1 @@
+{"id":"ce7f5849-7ba7-485d-8aed-f5a0bcbe21c1","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"RecordingReminderMeetingRecording","query":"subscription RecordingReminderMeetingRecording {\n  meeting_recording {\n    isRecording\n    startedAt\n    __typename\n  }\n}"}}

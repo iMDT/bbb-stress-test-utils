@@ -1,0 +1,1 @@
+{"id":"141f883b-0c98-4148-9217-94cb898e850e","type":"subscribe","payload":{"variables":{},"extensions":{},"query":"{\n  user_metadata {\n    parameter\n    value\n    __typename\n  }\n}"}}

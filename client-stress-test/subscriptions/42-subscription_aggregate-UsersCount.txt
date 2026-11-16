@@ -1,0 +1,1 @@
+{"id":"e0fb26e5-e433-41c3-a8a2-16e0f4af8009","type":"subscribe","payload":{"variables":{"where":{"name":{"_ilike":"%"}}},"extensions":{},"operationName":"UsersCount","query":"subscription UsersCount($where: user_bool_exp) {\n  user_aggregate(where: $where) {\n    aggregate {\n      count\n      __typename\n    }\n    __typename\n  }\n}"}}

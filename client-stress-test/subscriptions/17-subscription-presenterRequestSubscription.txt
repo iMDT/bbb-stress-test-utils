@@ -1,0 +1,1 @@
+{"id":"0dd791e0-f90b-4c11-b892-999a81db924f","type":"subscribe","payload":{"variables":{},"extensions":{},"operationName":"presenterRequestSubscription","query":"subscription presenterRequestSubscription {\n  user(where: {requestedPresenter: {_eq: true}}) {\n    userId\n    name\n    requestedPresenter\n    __typename\n  }\n}"}}
